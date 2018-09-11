@@ -52,7 +52,13 @@ public:
    * vDisplays  number of displays vertically
    */
   Max72xxPanel(SPI_HandleTypeDef* hSPI, byte hDisplays=1, byte vDisplays=1);
+  
+	/*
+	*Metodo nuevo para configurar el harware dentro de main() para poder generar el objeto matrix de manera global
+	* de otra forma cubeMX no configuro el SPI aun y falla. Esta funcion es llamada una sola vez para iniciar los displays
+        */
 
+	void init(void);
 	/*
 	 * Define how the displays are ordered. The first display (0)
 	 * is the one closest to the Arduino.

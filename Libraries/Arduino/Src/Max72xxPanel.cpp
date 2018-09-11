@@ -35,7 +35,9 @@ Max72xxPanel::Max72xxPanel(SPI_HandleTypeDef* hSPI, byte hDisplays, byte vDispla
   	matrixPosition[display] = display;
   	matrixRotation[display] = 0;
   }
+}
 
+void Max72xxPanel::init(void){
 
   // Clear the screen
   fillScreen(0);
