@@ -2,6 +2,8 @@
 #include "stm32f1xx_hal.h"
 #include <Adafruit_GFX.h>
 #include <Max72xxPanel.h>
+#include "LiquidCrystal_I2C.h"
+
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -10,6 +12,8 @@
 SPI_HandleTypeDef hspi1;
 
 UART_HandleTypeDef huart1;
+
+I2C_HandleTypeDef hi2c2;
 
 int numberOfHorizontalDisplays = 3;
 int numberOfVerticalDisplays = 2;
@@ -22,7 +26,8 @@ int y = 0; // center the text vertically
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+Max72xxPanel matrix = Max72xxPanel(&hspi1, numberOfHorizontalDisplays, numberOfVerticalDisplays);
+LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -30,6 +35,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_I2C2_Init(void);
 void spiTestWrite (void);
 void matrixInit(void);
 
@@ -73,7 +79,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   MX_SPI1_Init();
-
+  MX_I2C2_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -83,8 +89,10 @@ int main(void)
 
 
 Max72xxPanel matrix = Max72xxPanel(&hspi1, numberOfHorizontalDisplays, numberOfVerticalDisplays);
+LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
 matrixInit();
+lcd.init();
 matrix.setPosition(0, 0, 0); // The first display is at <0, 0>
 matrix.setPosition(1, 1, 0); // The second display is at <1, 0>
 matrix.setPosition(2, 2, 0); // The third display is at <2, 0>
@@ -100,6 +108,10 @@ matrix.setRotation(2, 1);    // The same hold for the last display
 matrix.setRotation(3, 1);
 matrix.setRotation(4, 1);
 matrix.setRotation(5, 1);
+
+lcd.backlight();
+lcd.setCursor(0,0);
+lcd.print("Hello, world!");
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -250,6 +262,27 @@ static void MX_USART1_UART_Init(void)
         * EVENT_OUT
         * EXTI
 */
+
+/* I2C2 init function */
+static void MX_I2C2_Init(void)
+{
+
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.ClockSpeed = 100000;
+  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 static void MX_GPIO_Init(void)
 {
 
