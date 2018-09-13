@@ -19,7 +19,7 @@
 							<option id="com.atollic.truestudio.toolchain_options.mcu.394261943" name="Microcontroller" superClass="com.atollic.truestudio.toolchain_options.mcu" useByScannerDiscovery="false" value="STM32F103C8" valueType="string"/>
 							<option id="com.atollic.truestudio.toolchain_options.vendor.416746640" name="Vendor name" superClass="com.atollic.truestudio.toolchain_options.vendor" useByScannerDiscovery="false" value="STMicroelectronics" valueType="string"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="com.atollic.truestudio.exe.debug.toolchain.platform.986693465" isAbstract="false" name="Debug platform" osList="all" superClass="com.atollic.truestudio.exe.debug.toolchain.platform"/>
-							<builder buildPath="${workspace_loc:/bluePill-test}/Debug" customBuilderProperties="toolChainpathString=/opt/Atollic_TrueSTUDIO_for_STM32_x86_64_9.0.0/ARMTools/bin|toolChainpathType=1|" id="com.atollic.truestudio.mbs.builder1.1546379780" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CDT Internal Builder" superClass="com.atollic.truestudio.mbs.builder1"/>
+							<builder buildPath="${workspace_loc:/bluePill-test}/Debug" customBuilderProperties="toolChainpathType=1|toolChainpathString=/opt/Atollic_TrueSTUDIO_for_STM32_x86_64_9.0.0/ARMTools/bin|" id="com.atollic.truestudio.mbs.builder1.1546379780" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CDT Internal Builder" superClass="com.atollic.truestudio.mbs.builder1"/>
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.as.2041884220" name="Assembler" superClass="com.atollic.truestudio.exe.debug.toolchain.as">
 								<option id="com.atollic.truestudio.common_options.target.endianess.907702383" name="Endianess" superClass="com.atollic.truestudio.common_options.target.endianess" useByScannerDiscovery="false"/>
 								<option id="com.atollic.truestudio.common_options.target.mcpu.277341079" name="Microcontroller" superClass="com.atollic.truestudio.common_options.target.mcpu" useByScannerDiscovery="false" value="STM32F103C8" valueType="enumerated"/>
@@ -45,6 +45,9 @@
 									<listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32F1xx/Include"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
+									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3"/>
+									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/include"/>
+									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS"/>
 								</option>
 								<option id="com.atollic.truestudio.common_options.target.endianess.376261286" name="Endianess" superClass="com.atollic.truestudio.common_options.target.endianess" useByScannerDiscovery="false"/>
 								<option id="com.atollic.truestudio.common_options.target.mcpu.2080918904" name="Microcontroller" superClass="com.atollic.truestudio.common_options.target.mcpu" useByScannerDiscovery="false" value="STM32F103C8" valueType="enumerated"/>
@@ -80,6 +83,9 @@
 									<listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32F1xx/Include"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
+									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3"/>
+									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/include"/>
+									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS"/>
 								</option>
 								<option id="com.atollic.truestudio.common_options.target.endianess.1855324533" name="Endianess" superClass="com.atollic.truestudio.common_options.target.endianess" useByScannerDiscovery="false"/>
 								<option id="com.atollic.truestudio.common_options.target.mcpu.595564171" name="Microcontroller" superClass="com.atollic.truestudio.common_options.target.mcpu" useByScannerDiscovery="false" value="STM32F103C8" valueType="enumerated"/>
@@ -116,6 +122,7 @@
 							<option id="com.atollic.truestudio.general.runtimelib.63549022.931114192" name="Runtime Library" superClass="com.atollic.truestudio.general.runtimelib.63549022"/>
 							<option id="com.atollic.truestudio.toolchain_options.mcu.394261943.406977225" name="Microcontroller" superClass="com.atollic.truestudio.toolchain_options.mcu.394261943"/>
 							<option id="com.atollic.truestudio.toolchain_options.vendor.416746640.1464873423" name="Vendor name" superClass="com.atollic.truestudio.toolchain_options.vendor.416746640"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="com.atollic.truestudio.exe.debug.toolchain.platform" isAbstract="false" name="Debug platform" osList="all" superClass="com.atollic.truestudio.exe.debug.toolchain.platform"/>
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.as.980323804" name="Assembler" superClass="com.atollic.truestudio.exe.debug.toolchain.as.2041884220">
 								<inputType id="com.atollic.truestudio.as.input.242227800" name="Input" superClass="com.atollic.truestudio.as.input"/>
 							</tool>
@@ -131,10 +138,25 @@
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.secoutput.736725363" name="Other" superClass="com.atollic.truestudio.exe.debug.toolchain.secoutput.332706265"/>
 						</toolChain>
 					</folderInfo>
+					<folderInfo id="com.atollic.truestudio.exe.debug.111044476.1631972826" name="/" resourcePath="Middlewares">
+						<toolChain id="com.atollic.truestudio.exe.debug.toolchain.1930368375" name="Atollic ARM Tools" superClass="com.atollic.truestudio.exe.debug.toolchain" unusedChildren="">
+							<option id="com.atollic.truestudio.general.runtimelib.63549022.205498790" name="Runtime Library" superClass="com.atollic.truestudio.general.runtimelib.63549022"/>
+							<option id="com.atollic.truestudio.toolchain_options.mcu.394261943.592612464" name="Microcontroller" superClass="com.atollic.truestudio.toolchain_options.mcu.394261943"/>
+							<option id="com.atollic.truestudio.toolchain_options.vendor.416746640.1608143791" name="Vendor name" superClass="com.atollic.truestudio.toolchain_options.vendor.416746640"/>
+							<tool id="com.atollic.truestudio.exe.debug.toolchain.as.235898986" name="Assembler" superClass="com.atollic.truestudio.exe.debug.toolchain.as.2041884220"/>
+							<tool id="com.atollic.truestudio.exe.debug.toolchain.gcc.1047787305" name="C Compiler" superClass="com.atollic.truestudio.exe.debug.toolchain.gcc.452509361"/>
+							<tool id="com.atollic.truestudio.exe.debug.toolchain.ld.1624622738" name="C Linker" superClass="com.atollic.truestudio.exe.debug.toolchain.ld.2032092834"/>
+							<tool id="com.atollic.truestudio.exe.debug.toolchain.gpp.1317077259" name="C++ Compiler" superClass="com.atollic.truestudio.exe.debug.toolchain.gpp.1746822801"/>
+							<tool id="com.atollic.truestudio.exe.debug.toolchain.ldcc.1125968085" name="C++ Linker" superClass="com.atollic.truestudio.exe.debug.toolchain.ldcc.1817998037"/>
+							<tool id="com.atollic.truestudio.ar.base.583066963" name="Archiver" superClass="com.atollic.truestudio.ar.base.1402572753"/>
+							<tool id="com.atollic.truestudio.exe.debug.toolchain.secoutput.556182477" name="Other" superClass="com.atollic.truestudio.exe.debug.toolchain.secoutput.332706265"/>
+						</toolChain>
+					</folderInfo>
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Inc"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Libraries"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Src"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="startup"/>
 					</sourceEntries>

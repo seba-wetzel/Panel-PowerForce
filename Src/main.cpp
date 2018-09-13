@@ -1,11 +1,12 @@
 #include "main.h"
 #include "stm32f1xx_hal.h"
+#include "cmsis_os.h"
+
+
+/* USER CODE BEGIN Includes */
 #include <Adafruit_GFX.h>
 #include <Max72xxPanel.h>
 #include "LiquidCrystal_I2C.h"
-
-/* USER CODE BEGIN Includes */
-
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -15,6 +16,12 @@ UART_HandleTypeDef huart1;
 
 I2C_HandleTypeDef hi2c1;
 
+osThreadId defaultTaskHandle;
+osThreadId TaskLCDHandle;
+osThreadId TaskDisplayHandle;
+osThreadId TaskEntradasHandle;
+osThreadId TaskSalidasHandle;
+osMessageQId colaHandle;
 
 int numberOfHorizontalDisplays = 3;
 int numberOfVerticalDisplays = 2;
@@ -37,12 +44,16 @@ static void MX_GPIO_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_I2C1_Init(void);
-void spiTestWrite (void);
-void matrixInit(void);
+void matrixInit(void);  //Inicia los paneles en el sentido correcto
+void StartDefaultTask(void const * argument);
+void lcdTask(void const * argument);
+void displayTask(void const * argument);
+void entradasTask(void const * argument);
+void salidasTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-void spiTestWrite (void);
+
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -86,36 +97,65 @@ int main(void)
 
   /* USER CODE END 2 */
 
+  /* USER CODE BEGIN RTOS_MUTEX */
+   /* add mutexes, ... */
+   /* USER CODE END RTOS_MUTEX */
 
+   /* USER CODE BEGIN RTOS_SEMAPHORES */
+   /* add semaphores, ... */
+   /* USER CODE END RTOS_SEMAPHORES */
 
-//Max72xxPanel matrix = Max72xxPanel(&hspi1, numberOfHorizontalDisplays, numberOfVerticalDisplays);
-//LiquidCrystal_I2C lcd(0x27,&hi2c1 ,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+   /* USER CODE BEGIN RTOS_TIMERS */
+   /* start timers, add new ones, ... */
+   /* USER CODE END RTOS_TIMERS */
 
-matrixInit();
-lcd.init();
-matrix.setPosition(0, 0, 0); // The first display is at <0, 0>
-matrix.setPosition(1, 1, 0); // The second display is at <1, 0>
-matrix.setPosition(2, 2, 0); // The third display is at <2, 0>
+   /* Create the thread(s) */
+   /* definition and creation of defaultTask */
+   osThreadDef(defaultTask, StartDefaultTask, osPriorityRealtime, 0, 128);
+   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
-matrix.setPosition(3, 5, 1);
-matrix.setPosition(4, 4, 1);
-matrix.setPosition(5, 3, 1);
+   /* definition and creation of TaskLCD */
+   osThreadDef(TaskLCD, lcdTask, osPriorityIdle, 0, 128);
+   TaskLCDHandle = osThreadCreate(osThread(TaskLCD), NULL);
 
-//  ...
-matrix.setRotation(0, 1);    // The first display is position upside down
-matrix.setRotation(1, 1);
-matrix.setRotation(2, 1);    // The same hold for the last display
-matrix.setRotation(3, 1);
-matrix.setRotation(4, 1);
-matrix.setRotation(5, 1);
+   /* definition and creation of TaskDisplay */
+   osThreadDef(TaskDisplay, displayTask, osPriorityIdle, 0, 128);
+   TaskDisplayHandle = osThreadCreate(osThread(TaskDisplay), NULL);
 
-lcd.backlight();
-//lcd.autoscroll();
-lcd.setCursor(0,0);
-lcd.print("POWER FORCE");
-lcd.setCursor(0,1);
-lcd.print("Division maquinas");
+   /* definition and creation of TaskEntradas */
+   osThreadDef(TaskEntradas, entradasTask, osPriorityIdle, 0, 128);
+   TaskEntradasHandle = osThreadCreate(osThread(TaskEntradas), NULL);
 
+   /* definition and creation of TaskSalidas */
+   osThreadDef(TaskSalidas, salidasTask, osPriorityIdle, 0, 128);
+   TaskSalidasHandle = osThreadCreate(osThread(TaskSalidas), NULL);
+
+   /* USER CODE BEGIN RTOS_THREADS */
+   /* add threads, ... */
+   /* USER CODE END RTOS_THREADS */
+
+   /* Create the queue(s) */
+   /* definition and creation of cola */
+ /* what about the sizeof here??? cd native code */
+   osMessageQDef(cola, 16, uint16_t);
+   colaHandle = osMessageCreate(osMessageQ(cola), NULL);
+
+   /* USER CODE BEGIN RTOS_QUEUES */
+   /* add queues, ... */
+   /* USER CODE END RTOS_QUEUES */
+   matrixInit();
+   lcd.init();
+   lcd.backlight();
+   //lcd.autoscroll();
+   lcd.setCursor(0,0);
+   lcd.print("POWER FORCE");
+   lcd.setCursor(0,1);
+   lcd.print("Division maquinas");
+
+   /* Start scheduler */
+   osKernelStart();
+
+   /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -123,42 +163,6 @@ lcd.print("Division maquinas");
   {
 
   /* USER CODE END WHILE */
-   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-
-   HAL_Delay(500);
-
-   //spiTestWrite();
-
-//   for ( int i = 0 ; i < width * tape.length(); i++ ) {
-//
-//     //matrix.fillScreen(LOW);
-//     int letter = i / width;
-//     int x = (matrix.width() - 1) - i % width;
-//
-//     //matrix.drawChar(0, 4, tape[0], HIGH, LOW, 1);
-//     while ( x + width - spacer >= 0 && letter >= 1 ) {
-//       if ( letter < tape.length() ) {
-//         matrix.drawChar(x, y, tape[letter], HIGH, LOW, 1);
-//       }
-//
-//       letter--;
-//       x -= width;
-//     }
-//
-//     matrix.write(); // Send bitmap to display
-//
-//     HAL_Delay(wait);
-//   }
-//   HAL_Delay(200);
-//   matrix.fillScreen(LOW);
-//   if(y>=8){ y = -1;}
-//   y+=3;
-
-
-
-
-
-
 
   /* USER CODE BEGIN 3 */
 
@@ -322,30 +326,123 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void spiTestWrite (void) {
-	uint8_t packet[2];
-	  packet[0] = 15;
-	  packet[1] = 1;
-	  uint8_t aTxBuffer[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-#define BUFFERSIZE  (COUNTOF(aTxBuffer) - 1)
-#define COUNTOF(__BUFFER__)   (sizeof(__BUFFER__) / sizeof(*(__BUFFER__)))
-	  uint8_t aRxBuffer[BUFFERSIZE];
-
-	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
-	  HAL_SPI_Transmit(&hspi1, (uint8_t*)aTxBuffer, BUFFERSIZE, 100);
-	  //HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)aTxBuffer, (uint8_t *)aRxBuffer, BUFFERSIZE, 5000);
-	  while (HAL_SPI_GetState(&hspi1) == HAL_SPI_STATE_BUSY_TX){
-
-	  }
-	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
-}
-
 
 void matrixInit (void) {
+	matrix.init();
+	matrix.setPosition(0, 0, 0); // The first display is at <0, 0>
+	matrix.setPosition(1, 1, 0); // The second display is at <1, 0>
+	matrix.setPosition(2, 2, 0); // The third display is at <2, 0>
 
+	matrix.setPosition(3, 5, 1);
+	matrix.setPosition(4, 4, 1);
+	matrix.setPosition(5, 3, 1);
+
+	//  ...
+	matrix.setRotation(0, 1);    // The first display is position upside down
+	matrix.setRotation(1, 1);
+	matrix.setRotation(2, 1);    // The same hold for the last display
+	matrix.setRotation(3, 1);
+	matrix.setRotation(4, 1);
+	matrix.setRotation(5, 1);
 }
 /* USER CODE END 4 */
+
+
+
+/* StartDefaultTask function */
+void StartDefaultTask(void const * argument)
+{
+
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+  for(;;)
+  {
+     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+
+   HAL_Delay(500);
+
+   uint32_t m = HAL_GetTick();
+   tape.concat(m);
+   for ( uint16_t i = 0 ; i < width * tape.length(); i++ ) {
+
+     //matrix.fillScreen(LOW);
+	   uint16_t letter = i / width;
+	   uint16_t x = (matrix.width() - 1) - i % width;
+
+     //matrix.drawChar(0, 4, tape[0], HIGH, LOW, 1);
+     while ( x + width - spacer >= 0 && letter >= 1 ) {
+       if ( letter < tape.length() ) {
+         matrix.drawChar(x, y, tape[letter], HIGH, LOW, 1);
+       }
+
+       letter--;
+       x -= width;
+     }
+
+     matrix.write(); // Send bitmap to display
+
+     HAL_Delay(wait);
+   }
+   HAL_Delay(200);
+   matrix.fillScreen(LOW);
+   if(y>=8){ y = -1;}
+   y+=3;
+
+
+
+
+    osDelay(1);
+  }
+  /* USER CODE END 5 */
+}
+
+/* lcdTask function */
+void lcdTask(void const * argument)
+{
+  /* USER CODE BEGIN lcdTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END lcdTask */
+}
+
+/* displayTask function */
+void displayTask(void const * argument)
+{
+  /* USER CODE BEGIN displayTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END displayTask */
+}
+
+/* entradasTask function */
+void entradasTask(void const * argument)
+{
+  /* USER CODE BEGIN entradasTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END entradasTask */
+}
+
+/* salidasTask function */
+void salidasTask(void const * argument)
+{
+  /* USER CODE BEGIN salidasTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END salidasTask */
+}
 
 /**
   * @brief  Period elapsed callback in non blocking mode
