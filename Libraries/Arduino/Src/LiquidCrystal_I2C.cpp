@@ -2,11 +2,11 @@
 
 #include "LiquidCrystal_I2C.h"
 
-extern I2C_HandleTypeDef hi2c2;  //Cambiar para pasar por puntero luego
+extern I2C_HandleTypeDef hi2c1;  //Cambiar para pasar por puntero luego
 
 #define printIIC(args) HAL_I2C_Master_Transmit (&hi2c2, (uint16_t)(39<<1),(uint8_t ) args, sizeof(args), 100)
 #define delay(x) HAL_Delay(x)
-#define delayMicroseconds(x) HAL_Delay(x)
+#define delayMicroseconds(x) HAL_Delay(x/1000)
 
 inline size_t LiquidCrystal_I2C::write(uint8_t value) {
 	send(value, Rs);
@@ -35,9 +35,10 @@ inline size_t LiquidCrystal_I2C::write(uint8_t value) {
 // can't assume that its in that state when a sketch starts (and the
 // LiquidCrystal constructor is called).
 
-LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr,uint8_t lcd_cols,uint8_t lcd_rows)
+LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr, I2C_HandleTypeDef* hI2C , uint8_t lcd_cols,uint8_t lcd_rows)
 {
   _Addr = lcd_Addr;
+  LiquidCrystal_I2C::_hI2C = hI2C;
   _cols = lcd_cols;
   _rows = lcd_rows;
   _backlightval = LCD_NOBACKLIGHT;
@@ -231,7 +232,7 @@ inline void LiquidCrystal_I2C::command(uint8_t value) {
 void LiquidCrystal_I2C::send(uint8_t value, uint8_t mode) {
 	uint8_t highnib=value&0xf0;
 	uint8_t lownib=(value<<4)&0xf0;
-       write4bits((highnib)|mode);
+    write4bits((highnib)|mode);
 	write4bits((lownib)|mode); 
 }
 
@@ -242,8 +243,10 @@ void LiquidCrystal_I2C::write4bits(uint8_t value) {
 
 void LiquidCrystal_I2C::expanderWrite(uint8_t _data){                                        
 	//Wire.beginTransmission(_Addr);
-	uint8_t temp = ((uint8_t)(_data) | _backlightval);
-	HAL_I2C_Master_Transmit (&hi2c2, (uint16_t)(39<<1),(uint8_t *) temp, sizeof(temp), 100);
+	uint8_t temp [1];
+	temp [0] = ((uint8_t)(_data) | _backlightval);
+	HAL_I2C_Master_Transmit (const_cast<I2C_HandleTypeDef*>(_hI2C), (uint16_t)(_Addr<<1),(uint8_t *) temp, sizeof(temp), 100);
+	//HAL_I2C_Master_Transmit (&hi2c1, (uint16_t)(39<<1),(uint8_t *) temp, sizeof(temp), 100);
 	//printIIC((uint8_t)(_data) | _backlightval);
 	//Wire.endTransmission();
 }

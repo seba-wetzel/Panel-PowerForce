@@ -13,7 +13,8 @@ SPI_HandleTypeDef hspi1;
 
 UART_HandleTypeDef huart1;
 
-I2C_HandleTypeDef hi2c2;
+I2C_HandleTypeDef hi2c1;
+
 
 int numberOfHorizontalDisplays = 3;
 int numberOfVerticalDisplays = 2;
@@ -27,7 +28,7 @@ int y = 0; // center the text vertically
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 Max72xxPanel matrix = Max72xxPanel(&hspi1, numberOfHorizontalDisplays, numberOfVerticalDisplays);
-LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, &hi2c1 ,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -35,7 +36,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_SPI1_Init(void);
-static void MX_I2C2_Init(void);
+static void MX_I2C1_Init(void);
 void spiTestWrite (void);
 void matrixInit(void);
 
@@ -79,17 +80,16 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   MX_SPI1_Init();
-  MX_I2C2_Init();
+  MX_I2C1_Init();
 
   /* USER CODE BEGIN 2 */
-
 
   /* USER CODE END 2 */
 
 
 
-Max72xxPanel matrix = Max72xxPanel(&hspi1, numberOfHorizontalDisplays, numberOfVerticalDisplays);
-LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+//Max72xxPanel matrix = Max72xxPanel(&hspi1, numberOfHorizontalDisplays, numberOfVerticalDisplays);
+//LiquidCrystal_I2C lcd(0x27,&hi2c1 ,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
 matrixInit();
 lcd.init();
@@ -110,8 +110,13 @@ matrix.setRotation(4, 1);
 matrix.setRotation(5, 1);
 
 lcd.backlight();
+//lcd.autoscroll();
 lcd.setCursor(0,0);
-lcd.print("Hello, world!");
+lcd.print("POWER FORCE");
+lcd.setCursor(0,1);
+lcd.print("Division maquinas");
+
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -124,30 +129,30 @@ lcd.print("Hello, world!");
 
    //spiTestWrite();
 
-   for ( int i = 0 ; i < width * tape.length(); i++ ) {
-
-     //matrix.fillScreen(LOW);
-     int letter = i / width;
-     int x = (matrix.width() - 1) - i % width;
-
-     //matrix.drawChar(0, 4, tape[0], HIGH, LOW, 1);
-     while ( x + width - spacer >= 0 && letter >= 1 ) {
-       if ( letter < tape.length() ) {
-         matrix.drawChar(x, y, tape[letter], HIGH, LOW, 1);
-       }
-
-       letter--;
-       x -= width;
-     }
-
-     matrix.write(); // Send bitmap to display
-
-     HAL_Delay(wait);
-   }
-   HAL_Delay(200);
-   matrix.fillScreen(LOW);
-   if(y>=8){ y = -1;}
-   y+=3;
+//   for ( int i = 0 ; i < width * tape.length(); i++ ) {
+//
+//     //matrix.fillScreen(LOW);
+//     int letter = i / width;
+//     int x = (matrix.width() - 1) - i % width;
+//
+//     //matrix.drawChar(0, 4, tape[0], HIGH, LOW, 1);
+//     while ( x + width - spacer >= 0 && letter >= 1 ) {
+//       if ( letter < tape.length() ) {
+//         matrix.drawChar(x, y, tape[letter], HIGH, LOW, 1);
+//       }
+//
+//       letter--;
+//       x -= width;
+//     }
+//
+//     matrix.write(); // Send bitmap to display
+//
+//     HAL_Delay(wait);
+//   }
+//   HAL_Delay(200);
+//   matrix.fillScreen(LOW);
+//   if(y>=8){ y = -1;}
+//   y+=3;
 
 
 
@@ -263,20 +268,20 @@ static void MX_USART1_UART_Init(void)
         * EXTI
 */
 
-/* I2C2 init function */
-static void MX_I2C2_Init(void)
+/* I2C1 init function */
+static void MX_I2C1_Init(void)
 {
 
-  hi2c2.Instance = I2C2;
-  hi2c2.Init.ClockSpeed = 100000;
-  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c2.Init.OwnAddress1 = 0;
-  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c2.Init.OwnAddress2 = 0;
-  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 78;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }

@@ -55,7 +55,7 @@
 
 class LiquidCrystal_I2C : public Print {
 public:
-  LiquidCrystal_I2C(uint8_t lcd_Addr,uint8_t lcd_cols,uint8_t lcd_rows);
+  LiquidCrystal_I2C(uint8_t lcd_Addr,I2C_HandleTypeDef* hI2C, uint8_t lcd_cols,uint8_t lcd_rows);
   void begin(uint8_t cols, uint8_t rows, uint8_t charsize = LCD_5x8DOTS );
   void clear();
   void home();
@@ -111,6 +111,7 @@ private:
   void expanderWrite(uint8_t);
   void pulseEnable(uint8_t);
   uint8_t _Addr;
+  const I2C_HandleTypeDef* _hI2C;
   uint8_t _displayfunction;
   uint8_t _displaycontrol;
   uint8_t _displaymode;
