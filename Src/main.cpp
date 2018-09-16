@@ -59,7 +59,7 @@ void salidasTask(void const * argument);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 void printMenssage(void);
-void drawProgram(uint8_t* );
+void drawProgram(uint8_t *);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
