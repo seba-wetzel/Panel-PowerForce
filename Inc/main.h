@@ -55,13 +55,58 @@
 
 /* USER CODE END Includes */
 /* Private define ------------------------------------------------------------*/
-#define SPIx_SCK_PIN                     GPIO_PIN_13
-#define SPIx_SCK_GPIO_PORT               GPIOB
-#define SPIx_MISO_PIN                    GPIO_PIN_14
-#define SPIx_MISO_GPIO_PORT              GPIOB
-#define SPIx_MOSI_PIN                    GPIO_PIN_15
-#define SPIx_MOSI_GPIO_PORT              GPIOB
-//#define byte uint8_t
+//SPI
+#define SCK_Pin GPIO_PIN_5
+#define SCK_GPIO_Port GPIOA
+#define MOSI_Pin GPIO_PIN_7
+#define MOSI_GPIO_Port GPIOA
+#define CS_Pin GPIO_PIN_1
+#define CS_GPIO_Port GPIOB
+
+//UART
+#define Tx_Pin GPIO_PIN_9
+#define Tx_GPIO_Port GPIOA
+#define Rx_Pin GPIO_PIN_10
+#define Rx_GPIO_Port GPIOA
+
+//I2C
+#define SCL_Pin GPIO_PIN_6
+#define SCL_GPIO_Port GPIOB
+#define SDA_Pin GPIO_PIN_7
+#define SDA_GPIO_Port GPIOB
+
+//Salidas
+#define LED_Pin GPIO_PIN_13
+#define LED_GPIO_Port GPIOC
+#define VEL_U_Pin GPIO_PIN_0
+#define VEL_U_GPIO_Port GPIOA
+#define VEL_D_Pin GPIO_PIN_1
+#define VEL_D_GPIO_Port GPIOA
+#define ON_OFF_Pin GPIO_PIN_2
+#define ON_OFF_GPIO_Port GPIOA
+
+//Entradas
+#define VEL_UP_Pin GPIO_PIN_12
+#define VEL_UP_GPIO_Port GPIOB
+#define VEL_DOWN_Pin GPIO_PIN_13
+#define VEL_DOWN_GPIO_Port GPIOB
+#define ENTER_Pin GPIO_PIN_14
+#define ENTER_GPIO_Port GPIOB
+#define PROGRAMA_Pin GPIO_PIN_15
+#define PROGRAMA_GPIO_Port GPIOB
+#define PENDIENTE_UP_Pin GPIO_PIN_8
+#define PENDIENTE_UP_GPIO_Port GPIOA
+#define PENDIENTE_DOWN_Pin GPIO_PIN_11
+#define PENDIENTE_DOWN_GPIO_Port GPIOA
+#define TIMMER_Pin GPIO_PIN_12
+#define TIMMER_GPIO_Port GPIOA
+#define VIENTO_Pin GPIO_PIN_15
+#define VIENTO_GPIO_Port GPIOA
+#define START_Pin GPIO_PIN_3
+#define START_GPIO_Port GPIOB
+#define STOP_Pin GPIO_PIN_4
+#define STOP_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 #include <stdint.h>

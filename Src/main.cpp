@@ -36,6 +36,9 @@ uint8_t p1[] = { 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2, 5
 uint8_t p2[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10, 9, 7, 7, 4, 4, 3, 3, 2, 2, 1 };
 uint8_t p3[] = { 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2, 5, 5, 2, 1 };
 
+uint16_t pinEntradas []={VEL_UP_Pin, VEL_DOWN_Pin, ENTER_Pin, PROGRAMA_Pin, PENDIENTE_UP_Pin, PENDIENTE_DOWN_Pin, TIMMER_Pin, VIENTO_Pin, START_Pin, STOP_Pin};
+GPIO_TypeDef* puertoEntradas[]={VEL_UP_GPIO_Port, VEL_DOWN_GPIO_Port, ENTER_GPIO_Port, PROGRAMA_GPIO_Port, PENDIENTE_UP_GPIO_Port, PENDIENTE_DOWN_GPIO_Port, TIMMER_GPIO_Port, VIENTO_GPIO_Port, START_GPIO_Port, STOP_GPIO_Port};
+
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 Max72xxPanel matrix = Max72xxPanel(&hspi1, numberOfHorizontalDisplays,
@@ -291,39 +294,59 @@ static void MX_I2C1_Init(void) {
 
 }
 
-static void MX_GPIO_Init(void) {
+static void MX_GPIO_Init(void)
+{
 
-	GPIO_InitTypeDef GPIO_InitStruct;
+  GPIO_InitTypeDef GPIO_InitStruct;
 
-	/* GPIO Ports Clock Enable */
-	__HAL_RCC_GPIOC_CLK_ENABLE()
-	;
-	__HAL_RCC_GPIOD_CLK_ENABLE()
-	;
-	__HAL_RCC_GPIOA_CLK_ENABLE()
-	;
-	__HAL_RCC_GPIOB_CLK_ENABLE()
-	;
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, VEL_U_Pin|VEL_D_Pin|ON_OFF_Pin, GPIO_PIN_RESET);
 
-	/*Configure GPIO pin : PC13 */
-	GPIO_InitStruct.Pin = GPIO_PIN_13;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
 
-	/*Configure GPIO pin : PB1 */
-	GPIO_InitStruct.Pin = GPIO_PIN_1;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_PULLUP;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  /*Configure GPIO pin : LED_Pin */
+  GPIO_InitStruct.Pin = LED_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : VEL_U_Pin VEL_D_Pin ON_OFF_Pin */
+  GPIO_InitStruct.Pin = VEL_U_Pin|VEL_D_Pin|ON_OFF_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : CS_Pin */
+  GPIO_InitStruct.Pin = CS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(CS_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : VEL_UP_Pin VEL_DOWN_Pin ENTER_Pin PROGRAMA_Pin START_Pin STOP_Pin */
+
+  GPIO_InitStruct.Pin = VEL_UP_Pin|VEL_DOWN_Pin|ENTER_Pin|PROGRAMA_Pin|START_Pin|STOP_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PENDIENTE_UP_Pin PENDIENTE_DOWN_Pin TIMMER_Pin VIENTO_Pin */
+  GPIO_InitStruct.Pin = PENDIENTE_UP_Pin|PENDIENTE_DOWN_Pin|TIMMER_Pin|VIENTO_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 }
 
@@ -376,10 +399,9 @@ void lcdTask(void const * argument) {
 	/* USER CODE BEGIN lcdTask */
 	/* Infinite loop */
 	for (;;) {
-		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-
-		//HAL_Delay(500);
-		osDelay(500);
+		lcd.setCursor(0, 0);
+		lcd.print(HAL_GetTick() / 1000);
+		osDelay(1000);
 	}
 	/* USER CODE END lcdTask */
 }
@@ -389,9 +411,7 @@ void displayTask(void const * argument) {
 	/* USER CODE BEGIN displayTask */
 	/* Infinite loop */
 	for (;;) {
-		lcd.setCursor(0, 0);
-		lcd.print(HAL_GetTick() / 1000);
-		osDelay(1000);
+
 	}
 	/* USER CODE END displayTask */
 }
@@ -401,6 +421,23 @@ void entradasTask(void const * argument) {
 	/* USER CODE BEGIN entradasTask */
 	/* Infinite loop */
 	for (;;) {
+		GPIO_PinState pines [10];
+		for (uint8_t i=0; i<=9; i++){
+		pines[i] = HAL_GPIO_ReadPin(puertoEntradas[i], pinEntradas[i]);
+		}
+        uint8_t suma = 0;
+        for (uint8_t i=0; i<=9; i++){
+        		suma += pines[i];
+        		}
+        if (suma == 9){
+        	for (uint8_t i=0; i<=9; i++){
+        	        		if (pines[i] == GPIO_PIN_RESET){
+        	        			char temp [2];
+        	        			itoa (i,temp,10);
+        	        			HAL_UART_Transmit(&huart1, (uint8_t*)temp, 1, 100 );
+        	        		}
+        	        		}
+        }
 		osDelay(1);
 	}
 	/* USER CODE END entradasTask */
