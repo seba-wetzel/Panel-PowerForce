@@ -3,6 +3,7 @@
 #include "cmsis_os.h"
 
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 #include <Adafruit_GFX.h>
 #include <Max72xxPanel.h>
 #include "LiquidCrystal_I2C.h"
@@ -22,29 +23,46 @@ osThreadId TaskEntradasHandle;
 osThreadId TaskSalidasHandle;
 osMessageQId colaHandle;
 
+//Variables del display led
 int numberOfHorizontalDisplays = 3;
 int numberOfVerticalDisplays = 2;
-
 String tape = " Power Force";
 int wait = 50; // In milliseconds
 int spacer = 1;
 int width = 5 + spacer; // The font width is 5 pixels
 int y = 5; // center the text vertically
 
-uint8_t p0[] = { 1, 1, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5, 5, 2, 1 };
-uint8_t p1[] = { 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2, 5, 5, 2, 1 };
-uint8_t p2[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10, 9, 7, 7, 4, 4, 3, 3, 2, 2, 1 };
-uint8_t p3[] = { 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2, 5, 5, 2, 1 };
+maquina_s maquina = {OFF,
+					NO_INIT,
+					M,
+					0,
+					0,
+					A0
+};
 
-uint16_t pinEntradas []={VEL_UP_Pin, VEL_DOWN_Pin, ENTER_Pin, PROGRAMA_Pin, PENDIENTE_UP_Pin, PENDIENTE_DOWN_Pin, TIMMER_Pin, VIENTO_Pin, START_Pin, STOP_Pin};
-GPIO_TypeDef* puertoEntradas[]={VEL_UP_GPIO_Port, VEL_DOWN_GPIO_Port, ENTER_GPIO_Port, PROGRAMA_GPIO_Port, PENDIENTE_UP_GPIO_Port, PENDIENTE_DOWN_GPIO_Port, TIMMER_GPIO_Port, VIENTO_GPIO_Port, START_GPIO_Port, STOP_GPIO_Port};
+uint8_t p0[] = { 1, 1, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5,
+		5, 2, 1 };
+uint8_t p1[] = { 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2,
+		5, 5, 2, 1 };
+uint8_t p2[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10, 9, 7, 7, 4, 4,
+		3, 3, 2, 2, 1 };
+uint8_t p3[] = { 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2,
+		5, 5, 2, 1 };
+
+uint16_t pinEntradas[] = { VEL_UP_Pin, VEL_DOWN_Pin, ENTER_Pin, PROGRAMA_Pin,
+		PENDIENTE_UP_Pin, PENDIENTE_DOWN_Pin, TIMMER_Pin, VIENTO_Pin, START_Pin,
+		STOP_Pin };
+GPIO_TypeDef* puertoEntradas[] = { VEL_UP_GPIO_Port, VEL_DOWN_GPIO_Port,
+		ENTER_GPIO_Port, PROGRAMA_GPIO_Port, PENDIENTE_UP_GPIO_Port,
+		PENDIENTE_DOWN_GPIO_Port, TIMMER_GPIO_Port, VIENTO_GPIO_Port,
+		START_GPIO_Port, STOP_GPIO_Port };
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 Max72xxPanel matrix = Max72xxPanel(&hspi1, numberOfHorizontalDisplays,
 		numberOfVerticalDisplays);
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, &hi2c1, 16, 2); // set the LCD address to 0x27 for a 16 chars and 2 line display
-		/* USER CODE END PV */
+/* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -145,7 +163,7 @@ int main(void) {
 	/* Create the queue(s) */
 	/* definition and creation of cola */
 	/* what about the sizeof here??? cd native code */
-	osMessageQDef(cola, 16, uint16_t);
+	osMessageQDef(cola, 16, uint8_t);
 	colaHandle = osMessageCreate(osMessageQ(cola), NULL);
 
 	/* USER CODE BEGIN RTOS_QUEUES */
@@ -153,16 +171,6 @@ int main(void) {
 	/* USER CODE END RTOS_QUEUES */
 	matrixInit();
 	lcd.init();
-	lcd.backlight();
-	//lcd.autoscroll();
-	lcd.setCursor(0, 0);
-	lcd.print("POWER FORCE");
-	lcd.setCursor(0, 1);
-	lcd.print("Division maquinas");
-	HAL_Delay(1000);
-	lcd.clear();
-	printMenssage();
-
 
 	/* Start scheduler */
 	osKernelStart();
@@ -294,59 +302,65 @@ static void MX_I2C1_Init(void) {
 
 }
 
-static void MX_GPIO_Init(void)
-{
+static void MX_GPIO_Init(void) {
 
-  GPIO_InitTypeDef GPIO_InitStruct;
+	GPIO_InitTypeDef GPIO_InitStruct;
 
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOC_CLK_ENABLE()
+	;
+	__HAL_RCC_GPIOD_CLK_ENABLE()
+	;
+	__HAL_RCC_GPIOA_CLK_ENABLE()
+	;
+	__HAL_RCC_GPIOB_CLK_ENABLE()
+	;
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, VEL_U_Pin|VEL_D_Pin|ON_OFF_Pin, GPIO_PIN_RESET);
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOA, VEL_U_Pin | VEL_D_Pin | ON_OFF_Pin,
+			GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : LED_Pin */
-  GPIO_InitStruct.Pin = LED_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
+	/*Configure GPIO pin : LED_Pin */
+	GPIO_InitStruct.Pin = LED_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : VEL_U_Pin VEL_D_Pin ON_OFF_Pin */
-  GPIO_InitStruct.Pin = VEL_U_Pin|VEL_D_Pin|ON_OFF_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	/*Configure GPIO pins : VEL_U_Pin VEL_D_Pin ON_OFF_Pin */
+	GPIO_InitStruct.Pin = VEL_U_Pin | VEL_D_Pin | ON_OFF_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : CS_Pin */
-  GPIO_InitStruct.Pin = CS_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(CS_GPIO_Port, &GPIO_InitStruct);
+	/*Configure GPIO pin : CS_Pin */
+	GPIO_InitStruct.Pin = CS_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(CS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : VEL_UP_Pin VEL_DOWN_Pin ENTER_Pin PROGRAMA_Pin START_Pin STOP_Pin */
+	/*Configure GPIO pins : VEL_UP_Pin VEL_DOWN_Pin ENTER_Pin PROGRAMA_Pin START_Pin STOP_Pin */
 
-  GPIO_InitStruct.Pin = VEL_UP_Pin|VEL_DOWN_Pin|ENTER_Pin|PROGRAMA_Pin|START_Pin|STOP_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	GPIO_InitStruct.Pin = VEL_UP_Pin | VEL_DOWN_Pin | ENTER_Pin | PROGRAMA_Pin
+			| START_Pin | STOP_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PENDIENTE_UP_Pin PENDIENTE_DOWN_Pin TIMMER_Pin VIENTO_Pin */
-  GPIO_InitStruct.Pin = PENDIENTE_UP_Pin|PENDIENTE_DOWN_Pin|TIMMER_Pin|VIENTO_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	/*Configure GPIO pins : PENDIENTE_UP_Pin PENDIENTE_DOWN_Pin TIMMER_Pin VIENTO_Pin */
+	GPIO_InitStruct.Pin = PENDIENTE_UP_Pin | PENDIENTE_DOWN_Pin | TIMMER_Pin
+			| VIENTO_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 }
 
@@ -377,19 +391,34 @@ void StartDefaultTask(void const * argument) {
 
 	/* USER CODE BEGIN 5 */
 	/* Infinite loop */
+	boton_e boton = NONE_BOTON;
 	for (;;) {
-		matrix.fillScreen(LOW);
-		drawProgram(p0);
-		osDelay(1000);
-		matrix.fillScreen(LOW);
-		drawProgram(p1);
-		osDelay(1000);
-		matrix.fillScreen(LOW);
-		drawProgram(p2);
-		osDelay(1000);
-		matrix.fillScreen(LOW);
-		drawProgram(p3);
-		osDelay(1000);
+		osEvent evt = osMessageGet(colaHandle, osWaitForever);
+		if (evt.status == osEventMessage) {
+			boton = (boton_e) evt.value.signals;
+		}
+
+		switch (boton) {
+		case ON_OFF_BOTON: if(maquina.power == OFF){
+			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+			maquina.power = ON;
+		}
+		else {
+			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+			maquina.power = OFF;
+		}
+			break;
+
+		case VEL_UP_BOTON:if((maquina.power == ON) && (maquina.run == START)){
+			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+			maquina.velocidad++;
+		}
+
+			break;
+
+		default:
+			break;
+		}
 	}
 	/* USER CODE END 5 */
 }
@@ -411,7 +440,18 @@ void displayTask(void const * argument) {
 	/* USER CODE BEGIN displayTask */
 	/* Infinite loop */
 	for (;;) {
-
+		matrix.fillScreen(LOW);
+		drawProgram(p0);
+		osDelay(1000);
+		matrix.fillScreen(LOW);
+		drawProgram(p1);
+		osDelay(1000);
+		matrix.fillScreen(LOW);
+		drawProgram(p2);
+		osDelay(1000);
+		matrix.fillScreen(LOW);
+		drawProgram(p3);
+		osDelay(1000);
 	}
 	/* USER CODE END displayTask */
 }
@@ -420,25 +460,60 @@ void displayTask(void const * argument) {
 void entradasTask(void const * argument) {
 	/* USER CODE BEGIN entradasTask */
 	/* Infinite loop */
+	uint8_t suma = 0;
+	volatile uint8_t activated = 0;
+	volatile uint8_t previusActivated = 0;
+	volatile uint8_t step = 0;
+	GPIO_PinState pines[10]; //Buffer para guardar el estado de las entradas
 	for (;;) {
-		GPIO_PinState pines [10];
-		for (uint8_t i=0; i<=9; i++){
-		pines[i] = HAL_GPIO_ReadPin(puertoEntradas[i], pinEntradas[i]);
+
+		//Bucle para guardar en el buffer el estado de las entradas
+		for (uint8_t i = 0; i <= 9; i++) {
+			pines[i] = HAL_GPIO_ReadPin(puertoEntradas[i], pinEntradas[i]);
 		}
-        uint8_t suma = 0;
-        for (uint8_t i=0; i<=9; i++){
-        		suma += pines[i];
-        		}
-        if (suma == 9){
-        	for (uint8_t i=0; i<=9; i++){
-        	        		if (pines[i] == GPIO_PIN_RESET){
-        	        			char temp [2];
-        	        			itoa (i,temp,10);
-        	        			HAL_UART_Transmit(&huart1, (uint8_t*)temp, 1, 100 );
-        	        		}
-        	        		}
-        }
-		osDelay(1);
+		suma = 0;
+		//Bucle para sumar el estado de todos los pines
+		for (uint8_t i = 0; i <= 9; i++) {
+			suma += pines[i];
+		}
+		//Si un solo pin esta activo la suma da 9, si es menor significa que se presionaron
+		//mas botones, si da mas significa que no se presiono ningun boton
+		if (suma == 9) {
+			//Buscamos que pin esta activado
+			for (uint8_t i = 0; i <= 9; i++) {
+				if (pines[i] == GPIO_PIN_RESET) {
+					activated = i;
+				}
+			}
+			if (activated != previusActivated) {
+				previusActivated = activated;
+				//step = 0;
+			} else {
+				if (step < 5) {
+					step++;
+				}
+			}
+			while (HAL_GPIO_ReadPin(puertoEntradas[activated],
+					pinEntradas[activated]) == GPIO_PIN_RESET) {
+				if ((boton_e)activated  == ON_OFF_BOTON ){
+					do{
+					osDelay(500);
+					}
+					while (HAL_GPIO_ReadPin(puertoEntradas[activated],
+							pinEntradas[activated]) == GPIO_PIN_RESET);
+				}
+				else {
+				osDelay(150u - (2u * step));
+				}
+				break;
+			}
+			//Envio del boton a la cola
+			osMessagePut(colaHandle, (boton_e) activated, osWaitForever);
+		} else {
+			//activated =0; suma = 0; previusActivated =0;
+			step = 0;
+		}
+		//osDelay(1);
 	}
 	/* USER CODE END entradasTask */
 }
@@ -448,7 +523,7 @@ void salidasTask(void const * argument) {
 	/* USER CODE BEGIN salidasTask */
 	/* Infinite loop */
 	for (;;) {
-		osDelay(1);
+		osDelay(100);
 	}
 	/* USER CODE END salidasTask */
 }
@@ -486,7 +561,6 @@ void _Error_Handler(char *file, int line) {
 	}
 	/* USER CODE END Error_Handler_Debug */
 }
-
 
 void drawProgram(uint8_t* barras) {
 

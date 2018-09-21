@@ -57,6 +57,7 @@
 								<option id="com.atollic.truestudio.gcc.optimization.prep_garbage.1536591201" name="Prepare dead code removal " superClass="com.atollic.truestudio.gcc.optimization.prep_garbage" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<option id="com.atollic.truestudio.gcc.optimization.prep_data.937362724" name="Prepare dead data removal" superClass="com.atollic.truestudio.gcc.optimization.prep_data" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<option id="com.atollic.truestudio.gcc.misc.otherflags.762629310" name="Other options" superClass="com.atollic.truestudio.gcc.misc.otherflags" useByScannerDiscovery="false" value="-DUSE_HAL_DRIVER -DSTM32F103xB -c -Os -Wall -Wextra -std=gnu11 -ffunction-sections -fdata-sections -nostdlib --param max-inline-insns-single=500 -Dprintf=iprintf -MMD " valueType="string"/>
+								<option id="com.atollic.truestudio.exe.debug.toolchain.gcc.optimization.level.1052025578" name="Optimization Level" superClass="com.atollic.truestudio.exe.debug.toolchain.gcc.optimization.level" useByScannerDiscovery="false" value="com.atollic.truestudio.gcc.optimization.level.0g" valueType="enumerated"/>
 								<inputType id="com.atollic.truestudio.gcc.input.981948251" superClass="com.atollic.truestudio.gcc.input"/>
 							</tool>
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.ld.2032092834" name="C Linker" superClass="com.atollic.truestudio.exe.debug.toolchain.ld">
@@ -98,6 +99,7 @@
 								<option id="com.atollic.truestudio.gpp.optimization.fno_exceptions.1986822645" name="Disable exception handling" superClass="com.atollic.truestudio.gpp.optimization.fno_exceptions" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<option id="com.atollic.truestudio.gpp.cppstandard.279434432" name="C++ standard" superClass="com.atollic.truestudio.gpp.cppstandard" useByScannerDiscovery="false" value="com.atollic.truestudio.gpp.cppstandard.cpp14" valueType="enumerated"/>
 								<option id="com.atollic.truestudio.gpp.misc.otherflags.969373193" name="Other options" superClass="com.atollic.truestudio.gpp.misc.otherflags" useByScannerDiscovery="false" value="-DUSE_HAL_DRIVER -DSTM32F103xB -c -Os -Wall -Wextra -std=gnu++14 -ffunction-sections -fdata-sections -nostdlib -fno-threadsafe-statics --param max-inline-insns-single=500 -fno-rtti -fno-exceptions -MMD" valueType="string"/>
+								<option id="com.atollic.truestudio.exe.debug.toolchain.gpp.optimization.level.2035780296" name="Optimization Level" superClass="com.atollic.truestudio.exe.debug.toolchain.gpp.optimization.level" useByScannerDiscovery="false" value="com.atollic.truestudio.gpp.optimization.level.0g" valueType="enumerated"/>
 								<inputType id="com.atollic.truestudio.gpp.input.2082731870" superClass="com.atollic.truestudio.gpp.input"/>
 							</tool>
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.ldcc.1817998037" name="C++ Linker" superClass="com.atollic.truestudio.exe.debug.toolchain.ldcc">
@@ -143,10 +145,17 @@
 							<option id="com.atollic.truestudio.general.runtimelib.63549022.205498790" name="Runtime Library" superClass="com.atollic.truestudio.general.runtimelib.63549022"/>
 							<option id="com.atollic.truestudio.toolchain_options.mcu.394261943.592612464" name="Microcontroller" superClass="com.atollic.truestudio.toolchain_options.mcu.394261943"/>
 							<option id="com.atollic.truestudio.toolchain_options.vendor.416746640.1608143791" name="Vendor name" superClass="com.atollic.truestudio.toolchain_options.vendor.416746640"/>
-							<tool id="com.atollic.truestudio.exe.debug.toolchain.as.235898986" name="Assembler" superClass="com.atollic.truestudio.exe.debug.toolchain.as.2041884220"/>
-							<tool id="com.atollic.truestudio.exe.debug.toolchain.gcc.1047787305" name="C Compiler" superClass="com.atollic.truestudio.exe.debug.toolchain.gcc.452509361"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="com.atollic.truestudio.exe.debug.toolchain.platform" isAbstract="false" name="Debug platform" osList="all" superClass="com.atollic.truestudio.exe.debug.toolchain.platform"/>
+							<tool id="com.atollic.truestudio.exe.debug.toolchain.as.235898986" name="Assembler" superClass="com.atollic.truestudio.exe.debug.toolchain.as.2041884220">
+								<inputType id="com.atollic.truestudio.as.input.1329524435" name="Input" superClass="com.atollic.truestudio.as.input"/>
+							</tool>
+							<tool id="com.atollic.truestudio.exe.debug.toolchain.gcc.1047787305" name="C Compiler" superClass="com.atollic.truestudio.exe.debug.toolchain.gcc.452509361">
+								<inputType id="com.atollic.truestudio.gcc.input.116046876" superClass="com.atollic.truestudio.gcc.input"/>
+							</tool>
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.ld.1624622738" name="C Linker" superClass="com.atollic.truestudio.exe.debug.toolchain.ld.2032092834"/>
-							<tool id="com.atollic.truestudio.exe.debug.toolchain.gpp.1317077259" name="C++ Compiler" superClass="com.atollic.truestudio.exe.debug.toolchain.gpp.1746822801"/>
+							<tool id="com.atollic.truestudio.exe.debug.toolchain.gpp.1317077259" name="C++ Compiler" superClass="com.atollic.truestudio.exe.debug.toolchain.gpp.1746822801">
+								<inputType id="com.atollic.truestudio.gpp.input.736987739" superClass="com.atollic.truestudio.gpp.input"/>
+							</tool>
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.ldcc.1125968085" name="C++ Linker" superClass="com.atollic.truestudio.exe.debug.toolchain.ldcc.1817998037"/>
 							<tool id="com.atollic.truestudio.ar.base.583066963" name="Archiver" superClass="com.atollic.truestudio.ar.base.1402572753"/>
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.secoutput.556182477" name="Other" superClass="com.atollic.truestudio.exe.debug.toolchain.secoutput.332706265"/>

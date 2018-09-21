@@ -52,7 +52,7 @@
   /* Includes ------------------------------------------------------------------*/
 
 /* USER CODE BEGIN Includes */
-
+#define millis() HAL_GetTick()
 /* USER CODE END Includes */
 /* Private define ------------------------------------------------------------*/
 //SPI
@@ -113,6 +113,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h>
 #include <math.h>
 #include <Print.hpp>
 #include "binary.h"
@@ -128,6 +129,45 @@
 #include "WString.h"
 #endif // __cplusplus
 
+typedef enum {
+	OFF,
+	ON
+}powerState_e;
+
+typedef enum{
+	NO_INIT,
+	START,
+	STOP
+}runState_e;
+
+typedef enum {
+	P0,
+	P1,
+	P2,
+	P3,
+	P4,
+	P5,
+	P6,
+	M
+}program_e;
+
+typedef enum{
+	A0,
+	A15,
+	A30,
+	A45,
+	A60
+}angle_e;
+
+typedef struct{
+	powerState_e power;
+	runState_e run;
+	program_e programa;
+	uint16_t velocidad;
+	uint16_t timmer;
+	angle_e inclinacion;
+}maquina_s;
+
 /* USER CODE END Private defines */
 
 void _Error_Handler(char *, int);
@@ -135,16 +175,18 @@ void _Error_Handler(char *, int);
 #define Error_Handler() _Error_Handler(__FILE__, __LINE__)
 
 typedef enum {
-	VEL_UP,
-	VEL_DOWN,
-	ENTER,
-	PROGRAMA,
-	PENDIENTE_UP,
-	PENDIENTE_DOWN,
-	TIMMER,
-	VIENTO,
-	START,
-	STOP
+	ON_OFF_BOTON,
+	VEL_UP_BOTON,
+	VEL_DOWN_BOTON,
+	ENTER_BOTON,
+	PROGRAMA_BOTON,
+	PENDIENTE_UP_BOTON,
+	PENDIENTE_DOWN_BOTON,
+	TIMMER_BOTON,
+	VIENTO_BOTON,
+	START_BOTON,
+	STOP_BOTON,
+	NONE_BOTON
 }boton_e;
 
 
