@@ -129,6 +129,9 @@
 #include "WString.h"
 #endif // __cplusplus
 
+#define timmerStep 300
+#define maxSpeed 160
+
 typedef enum {
 	OFF,
 	ON
@@ -141,6 +144,7 @@ typedef enum{
 }runState_e;
 
 typedef enum {
+	M,
 	P0,
 	P1,
 	P2,
@@ -148,8 +152,11 @@ typedef enum {
 	P4,
 	P5,
 	P6,
-	M
+	P7,
+	P9
 }program_e;
+
+
 
 typedef enum{
 	A0,
@@ -178,7 +185,7 @@ typedef enum {
 	ON_OFF_BOTON,
 	VEL_UP_BOTON,
 	VEL_DOWN_BOTON,
-	ENTER_BOTON,
+//	ENTER_BOTON,
 	PROGRAMA_BOTON,
 	PENDIENTE_UP_BOTON,
 	PENDIENTE_DOWN_BOTON,

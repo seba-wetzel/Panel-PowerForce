@@ -32,13 +32,7 @@ int spacer = 1;
 int width = 5 + spacer; // The font width is 5 pixels
 int y = 5; // center the text vertically
 
-maquina_s maquina = {OFF,
-					NO_INIT,
-					M,
-					0,
-					0,
-					A0
-};
+volatile maquina_s maquina = { OFF, NO_INIT, M, 0, 0, A0 };
 
 uint8_t p0[] = { 1, 1, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5,
 		5, 2, 1 };
@@ -50,19 +44,19 @@ uint8_t p3[] = { 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2,
 		5, 5, 2, 1 };
 
 uint16_t pinEntradas[] = { VEL_UP_Pin, VEL_DOWN_Pin, ENTER_Pin, PROGRAMA_Pin,
-		PENDIENTE_UP_Pin, PENDIENTE_DOWN_Pin, TIMMER_Pin, VIENTO_Pin, START_Pin,
-		STOP_Pin };
+PENDIENTE_UP_Pin, PENDIENTE_DOWN_Pin, TIMMER_Pin, VIENTO_Pin, START_Pin,
+STOP_Pin };
 GPIO_TypeDef* puertoEntradas[] = { VEL_UP_GPIO_Port, VEL_DOWN_GPIO_Port,
-		ENTER_GPIO_Port, PROGRAMA_GPIO_Port, PENDIENTE_UP_GPIO_Port,
-		PENDIENTE_DOWN_GPIO_Port, TIMMER_GPIO_Port, VIENTO_GPIO_Port,
-		START_GPIO_Port, STOP_GPIO_Port };
+ENTER_GPIO_Port, PROGRAMA_GPIO_Port, PENDIENTE_UP_GPIO_Port,
+PENDIENTE_DOWN_GPIO_Port, TIMMER_GPIO_Port, VIENTO_GPIO_Port,
+START_GPIO_Port, STOP_GPIO_Port };
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 Max72xxPanel matrix = Max72xxPanel(&hspi1, numberOfHorizontalDisplays,
 		numberOfVerticalDisplays);
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, &hi2c1, 16, 2); // set the LCD address to 0x27 for a 16 chars and 2 line display
-/* USER CODE END PV */
+		/* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -399,21 +393,77 @@ void StartDefaultTask(void const * argument) {
 		}
 
 		switch (boton) {
-		case ON_OFF_BOTON: if(maquina.power == OFF){
-			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-			maquina.power = ON;
-		}
-		else {
-			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-			maquina.power = OFF;
-		}
+		case ON_OFF_BOTON:
+			if (maquina.power == OFF) {
+				HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+				maquina.power = ON;
+			} else {
+				HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+				maquina.power = OFF;
+			}
 			break;
 
-		case VEL_UP_BOTON:if((maquina.power == ON) && (maquina.run == START)){
-			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-			maquina.velocidad++;
-		}
+		case VEL_UP_BOTON:
+			if ((maquina.power == ON) && (maquina.run == START)	&& (maquina.programa == M) && (maquina.velocidad < maxSpeed)) {
+				maquina.velocidad++;
+			}
+			break;
 
+		case VEL_DOWN_BOTON:
+			if ((maquina.power == ON) && (maquina.run == START) && (maquina.programa == M) && (maquina.velocidad > 0)) {
+				maquina.velocidad--;
+			}
+			break;
+
+		case PROGRAMA_BOTON:
+			if ((maquina.power == ON) && (maquina.run == NO_INIT)) {
+				if (maquina.programa == P9) {
+					maquina.programa = M;
+				} else {
+					maquina.programa = (program_e) (((uint8_t) maquina.programa) + 1);
+				}
+			}
+			break;
+
+		case PENDIENTE_UP_BOTON:
+			if ((maquina.power == ON) /*&& (maquina.run == START) && (maquina.programa == M)*/) {
+				if (maquina.inclinacion == A60) {
+
+				} else {
+					maquina.inclinacion = (angle_e) (((uint8_t) maquina.inclinacion) + 1);
+				}
+			}
+			break;
+
+		case PENDIENTE_DOWN_BOTON:
+			if ((maquina.power == ON) /*&& (maquina.run == START) && (maquina.programa == M)*/) {
+				if (maquina.inclinacion == A0) {
+
+				} else {
+					maquina.inclinacion = (angle_e) (((uint8_t) maquina.inclinacion) - 1);
+				}
+			}
+			break;
+
+		case TIMMER_BOTON:
+			if ((maquina.power == ON) && (maquina.run == NO_INIT)) {
+				maquina.timmer += timmerStep;
+			}
+			break;
+
+		case VIENTO_BOTON: //Aca solo debe hacer un toggle del pin de salida (no definido aun)
+            ;
+			break;
+
+		case START_BOTON:
+			if ((maquina.power == ON) && (maquina.run != START)) {
+							maquina.run = START;
+						}
+			break;
+		case STOP_BOTON:
+			if ((maquina.power == ON) && (maquina.run == START)) {
+							maquina.run = STOP;
+						}
 			break;
 
 		default:
@@ -495,15 +545,13 @@ void entradasTask(void const * argument) {
 			}
 			while (HAL_GPIO_ReadPin(puertoEntradas[activated],
 					pinEntradas[activated]) == GPIO_PIN_RESET) {
-				if ((boton_e)activated  == ON_OFF_BOTON ){
-					do{
-					osDelay(500);
-					}
-					while (HAL_GPIO_ReadPin(puertoEntradas[activated],
+				if ((boton_e) activated == ON_OFF_BOTON) {
+					do {
+						osDelay(500);
+					} while (HAL_GPIO_ReadPin(puertoEntradas[activated],
 							pinEntradas[activated]) == GPIO_PIN_RESET);
-				}
-				else {
-				osDelay(150u - (2u * step));
+				} else {
+					osDelay(150u - (2u * step));
 				}
 				break;
 			}
