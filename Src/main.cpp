@@ -7,6 +7,9 @@
 #include <Adafruit_GFX.h>
 #include <Max72xxPanel.h>
 #include "LiquidCrystal_I2C.h"
+extern "C"{
+#include "stm32_tm1637.h"
+}
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -32,16 +35,17 @@ int spacer = 1;
 int width = 5 + spacer; // The font width is 5 pixels
 int y = 5; // center the text vertically
 
-volatile maquina_s maquina = { OFF, NO_INIT, M, 0, 0, A0 };
 
-uint8_t p0[] = { 1, 1, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5,
-		5, 2, 1 };
-uint8_t p1[] = { 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2,
-		5, 5, 2, 1 };
-uint8_t p2[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10, 9, 7, 7, 4, 4,
-		3, 3, 2, 2, 1 };
-uint8_t p3[] = { 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2,
-		5, 5, 2, 1 };
+uint16_t initTime =0;
+
+uint8_t programas [5][24] = {
+		{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+		{ 1, 1, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5, 5, 2, 2, 5, 5, 2, 1 },
+		{ 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2,	5, 5, 2, 1 },
+		{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10, 9, 7, 7, 4, 4, 3, 3, 2, 2, 1 },
+		{ 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2, 5, 5, 2, 1 }};
+
+maquina_s maquina = { OFF, NO_INIT, M, 0, 300, A0 };
 
 uint16_t pinEntradas[] = { VEL_UP_Pin, VEL_DOWN_Pin, ENTER_Pin, PROGRAMA_Pin,
 PENDIENTE_UP_Pin, PENDIENTE_DOWN_Pin, TIMMER_Pin, VIENTO_Pin, START_Pin,
@@ -50,6 +54,9 @@ GPIO_TypeDef* puertoEntradas[] = { VEL_UP_GPIO_Port, VEL_DOWN_GPIO_Port,
 ENTER_GPIO_Port, PROGRAMA_GPIO_Port, PENDIENTE_UP_GPIO_Port,
 PENDIENTE_DOWN_GPIO_Port, TIMMER_GPIO_Port, VIENTO_GPIO_Port,
 START_GPIO_Port, STOP_GPIO_Port };
+
+uint16_t porcentaje = 0;
+uint8_t partes = 0;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -64,6 +71,7 @@ static void MX_GPIO_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_I2C1_Init(void);
+extern void initialise_monitor_handless (void);
 void matrixInit(void);  //Inicia los paneles en el sentido correcto
 void StartDefaultTask(void const * argument);
 void lcdTask(void const * argument);
@@ -165,7 +173,8 @@ int main(void) {
 	/* USER CODE END RTOS_QUEUES */
 	matrixInit();
 	lcd.init();
-
+	tm1637Init();
+	printMenssage();
 	/* Start scheduler */
 	osKernelStart();
 
@@ -417,10 +426,14 @@ void StartDefaultTask(void const * argument) {
 
 		case PROGRAMA_BOTON:
 			if ((maquina.power == ON) && (maquina.run == NO_INIT)) {
-				if (maquina.programa == P9) {
+				if (maquina.programa == P3) {
 					maquina.programa = M;
 				} else {
 					maquina.programa = (program_e) (((uint8_t) maquina.programa) + 1);
+//					for (uint8_t i=0; i<=23; i++){
+//						maquina.presets[i] = programas[((uint8_t) maquina.programa)][i];
+//					}
+
 				}
 			}
 			break;
@@ -458,6 +471,8 @@ void StartDefaultTask(void const * argument) {
 		case START_BOTON:
 			if ((maquina.power == ON) && (maquina.run != START)) {
 							maquina.run = START;
+						    porcentaje = maquina.timmer /25;
+						    initTime = maquina.timmer;
 						}
 			break;
 		case STOP_BOTON:
@@ -490,18 +505,33 @@ void displayTask(void const * argument) {
 	/* USER CODE BEGIN displayTask */
 	/* Infinite loop */
 	for (;;) {
-		matrix.fillScreen(LOW);
-		drawProgram(p0);
-		osDelay(1000);
-		matrix.fillScreen(LOW);
-		drawProgram(p1);
-		osDelay(1000);
-		matrix.fillScreen(LOW);
-		drawProgram(p2);
-		osDelay(1000);
-		matrix.fillScreen(LOW);
-		drawProgram(p3);
-		osDelay(1000);
+		if (maquina.power == ON) {
+
+			uint8_t segundos = maquina.timmer % 60;
+			uint8_t minutos = (maquina.timmer / 60) % 60;
+			tm1637DisplayDecimal(((minutos * 100) + (segundos)), 1);
+
+			if ((maquina.power == ON) && (maquina.run == START)
+					&& (maquina.programa != M)) {
+				if ((initTime - maquina.timmer) >= porcentaje) {
+					static uint8_t paso = 0;
+					initTime = maquina.timmer;
+					//maquina.presets[paso] = 0;
+					paso++;
+				}
+			}
+			matrix.fillScreen(LOW);
+			if (maquina.programa != M) {
+
+					//drawProgram(maquina.presets);
+
+			} else {
+				matrix.drawChar(7, 1, 'M', HIGH, LOW, 2);
+				matrix.write();
+				osDelay(1000);
+			}
+
+		}
 	}
 	/* USER CODE END displayTask */
 }
@@ -571,7 +601,13 @@ void salidasTask(void const * argument) {
 	/* USER CODE BEGIN salidasTask */
 	/* Infinite loop */
 	for (;;) {
-		osDelay(100);
+//		if((maquina.power == ON)&&(maquina.run == START) && (maquina.timmer >0) ){
+//			maquina.timmer -= 1;
+//		}
+//		if ((maquina.power == ON)&&(maquina.run == START) &&(maquina.timmer == 0)){
+//			maquina.run = STOP;
+//		}
+		osDelay(1000);
 	}
 	/* USER CODE END salidasTask */
 }
@@ -641,6 +677,7 @@ void printMenssage(void) {
 	}
 	HAL_Delay(200);
 	matrix.fillScreen(LOW);
+	matrix.write();
 
 }
 

@@ -1,6 +1,7 @@
-#include "stm32f1xx_hal.h"
-
 #include "stm32_tm1637.h"
+#include "stm32f1xx_hal.h"
+#include "cmsis_os.h"
+
 
 
 void _tm1637Start(void);
@@ -142,7 +143,7 @@ void _tm1637DelayUsec(unsigned int i)
             __asm__ __volatile__("nop\n\t":::"memory");
         }
     }*/
-	HAL_Delay(i);
+	osDelay(i);
 }
 
 void _tm1637ClkHigh(void)
