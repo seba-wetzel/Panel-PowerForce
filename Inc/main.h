@@ -131,6 +131,8 @@
 
 #define timmerStep 300
 #define maxSpeed 160
+#define maxTimmer 3600
+#define minTimmer 300
 
 typedef enum {
 	OFF,

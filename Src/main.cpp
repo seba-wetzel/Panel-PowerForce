@@ -45,7 +45,7 @@ uint8_t programas [5][24] = {
 		{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10, 9, 7, 7, 4, 4, 3, 3, 2, 2, 1 },
 		{ 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2, 5, 5, 2, 1 }};
 
-maquina_s maquina = { OFF, NO_INIT, M, 0, 300, A0 };
+maquina_s maquina = { OFF, NO_INIT, M, 0, minTimmer, A0 };
 
 uint16_t pinEntradas[] = { VEL_UP_Pin, VEL_DOWN_Pin, ENTER_Pin, PROGRAMA_Pin,
 PENDIENTE_UP_Pin, PENDIENTE_DOWN_Pin, TIMMER_Pin, VIENTO_Pin, START_Pin,
@@ -409,6 +409,7 @@ void StartDefaultTask(void const * argument) {
 			} else {
 				HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 				maquina.power = OFF;
+				maquina.run = NO_INIT;
 			}
 			break;
 
@@ -430,11 +431,8 @@ void StartDefaultTask(void const * argument) {
 					maquina.programa = M;
 				} else {
 					maquina.programa = (program_e) (((uint8_t) maquina.programa) + 1);
-//					for (uint8_t i=0; i<=23; i++){
-//						maquina.presets[i] = programas[((uint8_t) maquina.programa)][i];
-//					}
-
-				}
+					}
+				if(maquina.programa != M){memcpy(programas[0], programas[(uint8_t) maquina.programa],24); }
 			}
 			break;
 
@@ -460,7 +458,10 @@ void StartDefaultTask(void const * argument) {
 
 		case TIMMER_BOTON:
 			if ((maquina.power == ON) && (maquina.run == NO_INIT)) {
-				maquina.timmer += timmerStep;
+				 maquina.timmer += timmerStep;
+				if (maquina.timmer == maxTimmer) {
+					maquina.timmer = minTimmer;
+				}
 			}
 			break;
 
@@ -503,36 +504,43 @@ void lcdTask(void const * argument) {
 /* displayTask function */
 void displayTask(void const * argument) {
 	/* USER CODE BEGIN displayTask */
+	uint8_t segundos = 0;
+	uint8_t minutos  = 0;
 	/* Infinite loop */
 	for (;;) {
 		if (maquina.power == ON) {
-
-			uint8_t segundos = maquina.timmer % 60;
-			uint8_t minutos = (maquina.timmer / 60) % 60;
+			tm1637SetBrightness(7);
+			segundos = maquina.timmer % 60;
+			minutos = (maquina.timmer / 60) % 60;
 			tm1637DisplayDecimal(((minutos * 100) + (segundos)), 1);
+		}
+		else {
+			matrix.fillScreen(LOW);
+			tm1637SetBrightness(0);
+		}
 
-			if ((maquina.power == ON) && (maquina.run == START)
-					&& (maquina.programa != M)) {
+			if ((maquina.power == ON) && (maquina.run == START) && (maquina.programa != M)) {
+
 				if ((initTime - maquina.timmer) >= porcentaje) {
 					static uint8_t paso = 0;
 					initTime = maquina.timmer;
-					//maquina.presets[paso] = 0;
+					//Aca hay que ir borrando la barra del programa
+					programas[0][paso] = 0;
 					paso++;
 				}
 			}
 			matrix.fillScreen(LOW);
-			if (maquina.programa != M) {
+			if ( (maquina.power == ON) && (maquina.programa != M) ) {
 
-					//drawProgram(maquina.presets);
+				drawProgram(programas[0]);
 
-			} else {
+			} else if (maquina.power == ON) {
 				matrix.drawChar(7, 1, 'M', HIGH, LOW, 2);
 				matrix.write();
-				osDelay(1000);
 			}
-
+			osDelay(500);
 		}
-	}
+
 	/* USER CODE END displayTask */
 }
 
@@ -601,12 +609,12 @@ void salidasTask(void const * argument) {
 	/* USER CODE BEGIN salidasTask */
 	/* Infinite loop */
 	for (;;) {
-//		if((maquina.power == ON)&&(maquina.run == START) && (maquina.timmer >0) ){
-//			maquina.timmer -= 1;
-//		}
-//		if ((maquina.power == ON)&&(maquina.run == START) &&(maquina.timmer == 0)){
-//			maquina.run = STOP;
-//		}
+		if((maquina.power == ON)&&(maquina.run == START) && (maquina.timmer >0) ){
+			maquina.timmer -= 1;
+		}
+		if ((maquina.power == ON)&&(maquina.run == START) &&(maquina.timmer == 0)){
+			maquina.run = STOP;
+		}
 		osDelay(1000);
 	}
 	/* USER CODE END salidasTask */
