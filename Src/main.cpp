@@ -24,6 +24,7 @@ osThreadId TaskLCDHandle;
 osThreadId TaskDisplayHandle;
 osThreadId TaskEntradasHandle;
 osThreadId TaskSalidasHandle;
+osThreadId TaskTimmerHandle;
 osMessageQId colaHandle;
 
 //Variables del display led
@@ -78,6 +79,7 @@ void lcdTask(void const * argument);
 void displayTask(void const * argument);
 void entradasTask(void const * argument);
 void salidasTask(void const * argument);
+void timmerTask (void const * args);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -158,6 +160,10 @@ int main(void) {
 	osThreadDef(TaskSalidas, salidasTask, osPriorityIdle, 0, 128);
 	TaskSalidasHandle = osThreadCreate(osThread(TaskSalidas), NULL);
 
+	/* definition and creation of TimmerSalidas */
+	osThreadDef(TaskTimmer, timmerTask, osPriorityIdle, 0, 128);
+	TaskTimmerHandle = osThreadCreate(osThread(TaskTimmer), NULL);
+
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
 	/* USER CODE END RTOS_THREADS */
@@ -174,6 +180,7 @@ int main(void) {
 	matrixInit();
 	lcd.init();
 	tm1637Init();
+	tm1637SetBrightness(0);
 	printMenssage();
 	/* Start scheduler */
 	osKernelStart();
@@ -527,6 +534,7 @@ void displayTask(void const * argument) {
 					//Aca hay que ir borrando la barra del programa
 					programas[0][paso] = 0;
 					paso++;
+					maquina.velocidad = programas[0][paso];
 				}
 			}
 			matrix.fillScreen(LOW);
@@ -609,15 +617,27 @@ void salidasTask(void const * argument) {
 	/* USER CODE BEGIN salidasTask */
 	/* Infinite loop */
 	for (;;) {
-		if((maquina.power == ON)&&(maquina.run == START) && (maquina.timmer >0) ){
-			maquina.timmer -= 1;
+		if((maquina.power == ON)&&(maquina.run == START)){
+
 		}
-		if ((maquina.power == ON)&&(maquina.run == START) &&(maquina.timmer == 0)){
-			maquina.run = STOP;
-		}
-		osDelay(1000);
+		osDelay(500);
 	}
 	/* USER CODE END salidasTask */
+}
+/* timmerTask function */
+void timmerTask (void const * args){
+	/* USER CODE BEGIN timmerTask */
+	/* Infinite loop */
+	for (;;) {
+
+			if((maquina.power == ON)&&(maquina.run == START) && (maquina.timmer >0) ){
+				maquina.timmer -= 1;
+			}
+			if ((maquina.power == ON)&&(maquina.run == START) &&(maquina.timmer == 0)){
+				maquina.run = STOP;
+			}
+			osDelay(1000);
+	}
 }
 
 /**
