@@ -53,6 +53,10 @@
 
 /* USER CODE BEGIN Includes */
 #define millis() HAL_GetTick()
+#define diametroRodillo 12
+#define pi 3.14159265359
+#define frecuencieToSpeed(x) ((pi*diametroRodillo*x)/100)
+
 /* USER CODE END Includes */
 /* Private define ------------------------------------------------------------*/
 //SPI
@@ -86,6 +90,9 @@
 #define ON_OFF_GPIO_Port GPIOA
 
 //Entradas
+#define encoder_Pin GPIO_PIN_0
+#define encoder_GPIO_Port GPIOB
+#define encoder_EXTI_IRQn EXTI0_IRQn
 #define VEL_UP_Pin GPIO_PIN_12
 #define VEL_UP_GPIO_Port GPIOB
 #define VEL_DOWN_Pin GPIO_PIN_13

@@ -9,6 +9,7 @@
 #include "LiquidCrystal_I2C.h"
 extern "C"{
 #include "stm32_tm1637.h"
+#include "hal_uart_print.h"
 }
 /* USER CODE END Includes */
 
@@ -58,6 +59,8 @@ START_GPIO_Port, STOP_GPIO_Port };
 
 uint16_t porcentaje = 0;
 uint8_t partes = 0;
+
+float frecuencia = 0;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -245,6 +248,10 @@ void SystemClock_Config(void) {
 
 	/* SysTick_IRQn interrupt configuration */
 	HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+
+	  /* SysTick_IRQn interrupt configuration */
+	  HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
+
 }
 
 /* SPI1 init function */
@@ -317,21 +324,16 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitTypeDef GPIO_InitStruct;
 
 	/* GPIO Ports Clock Enable */
-	__HAL_RCC_GPIOC_CLK_ENABLE()
-	;
-	__HAL_RCC_GPIOD_CLK_ENABLE()
-	;
-	__HAL_RCC_GPIOA_CLK_ENABLE()
-	;
-	__HAL_RCC_GPIOB_CLK_ENABLE()
-	;
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	__HAL_RCC_GPIOD_CLK_ENABLE();
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOA, VEL_U_Pin | VEL_D_Pin | ON_OFF_Pin,
-			GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOA, VEL_U_Pin | VEL_D_Pin | ON_OFF_Pin, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
@@ -359,18 +361,26 @@ static void MX_GPIO_Init(void) {
 
 	/*Configure GPIO pins : VEL_UP_Pin VEL_DOWN_Pin ENTER_Pin PROGRAMA_Pin START_Pin STOP_Pin */
 
-	GPIO_InitStruct.Pin = VEL_UP_Pin | VEL_DOWN_Pin | ENTER_Pin | PROGRAMA_Pin
-			| START_Pin | STOP_Pin;
+	GPIO_InitStruct.Pin = VEL_UP_Pin | VEL_DOWN_Pin | ENTER_Pin | PROGRAMA_Pin 	| START_Pin | STOP_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 	/*Configure GPIO pins : PENDIENTE_UP_Pin PENDIENTE_DOWN_Pin TIMMER_Pin VIENTO_Pin */
-	GPIO_InitStruct.Pin = PENDIENTE_UP_Pin | PENDIENTE_DOWN_Pin | TIMMER_Pin
-			| VIENTO_Pin;
+	GPIO_InitStruct.Pin = PENDIENTE_UP_Pin | PENDIENTE_DOWN_Pin | TIMMER_Pin | VIENTO_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	/*Configure GPIO pin : encoder_Pin */
+	GPIO_InitStruct.Pin = encoder_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(encoder_GPIO_Port, &GPIO_InitStruct);
+
+	/* EXTI interrupt init*/
+	HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
 }
 
@@ -378,22 +388,36 @@ static void MX_GPIO_Init(void) {
 
 void matrixInit(void) {
 	matrix.init();
-	matrix.setPosition(0, 0, 0); // The first display is at <0, 0>
-	matrix.setPosition(1, 1, 0); // The second display is at <1, 0>
-	matrix.setPosition(2, 2, 0); // The third display is at <2, 0>
-
+	matrix.setPosition(0, 0, 0);
+	matrix.setPosition(1, 1, 0);
+	matrix.setPosition(2, 2, 0);
 	matrix.setPosition(3, 5, 1);
 	matrix.setPosition(4, 4, 1);
 	matrix.setPosition(5, 3, 1);
-
-	//  ...
-	matrix.setRotation(0, 1);    // The first display is position upside down
+	matrix.setRotation(0, 1);
 	matrix.setRotation(1, 1);
-	matrix.setRotation(2, 1);    // The same hold for the last display
+	matrix.setRotation(2, 1);
 	matrix.setRotation(3, 1);
 	matrix.setRotation(4, 1);
 	matrix.setRotation(5, 1);
 }
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+
+	volatile static bool capturaIndex = false;
+	volatile static uint32_t captura1, captura2,periodo;
+	if(!capturaIndex){
+		captura1 = HAL_GetTick();
+		capturaIndex = true;
+	}
+	else if (capturaIndex){
+		captura2 = HAL_GetTick();
+		periodo = captura2 - captura1;
+		frecuencia = 1000.f/periodo;
+		capturaIndex = false;
+	}
+}
+
 /* USER CODE END 4 */
 
 /* StartDefaultTask function */
@@ -618,7 +642,7 @@ void salidasTask(void const * argument) {
 	/* Infinite loop */
 	for (;;) {
 		if((maquina.power == ON)&&(maquina.run == START)){
-
+			printNumberLn((uint32_t)frecuencieToSpeed(frecuencia), 10);
 		}
 		osDelay(500);
 	}
