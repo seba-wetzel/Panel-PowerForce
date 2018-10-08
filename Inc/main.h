@@ -136,7 +136,7 @@
 #include "WString.h"
 #endif // __cplusplus
 
-#define timmerStep 300
+#define timmerStep 30
 #define maxSpeed 160
 #define maxTimmer 3600
 #define minTimmer 300
@@ -149,7 +149,8 @@ typedef enum {
 typedef enum{
 	NO_INIT,
 	START,
-	STOP
+	STOP,
+	FINISH
 }runState_e;
 
 typedef enum {
@@ -157,7 +158,7 @@ typedef enum {
 	P0,
 	P1,
 	P2,
-	P3
+	LAST_PROGRAM
 }program_e;
 
 
@@ -177,6 +178,7 @@ typedef struct{
 	uint16_t velocidad;
 	uint16_t timmer;
 	angle_e inclinacion;
+	float distancia;
 }maquina_s;
 
 /* USER CODE END Private defines */

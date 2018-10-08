@@ -47,7 +47,7 @@ uint8_t programas [5][24] = {
 		{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10, 9, 7, 7, 4, 4, 3, 3, 2, 2, 1 },
 		{ 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2, 5, 5, 2, 1 }};
 
-maquina_s maquina = { OFF, NO_INIT, M, 0, minTimmer, A0 };
+maquina_s maquina = { OFF, NO_INIT, M, 0, minTimmer, A0 , 0};
 
 uint16_t pinEntradas[] = { VEL_UP_Pin, VEL_DOWN_Pin, ENTER_Pin, PROGRAMA_Pin,
 PENDIENTE_UP_Pin, PENDIENTE_DOWN_Pin, TIMMER_Pin, VIENTO_Pin, START_Pin,
@@ -57,10 +57,13 @@ ENTER_GPIO_Port, PROGRAMA_GPIO_Port, PENDIENTE_UP_GPIO_Port,
 PENDIENTE_DOWN_GPIO_Port, TIMMER_GPIO_Port, VIENTO_GPIO_Port,
 START_GPIO_Port, STOP_GPIO_Port };
 
-uint16_t porcentaje = 0;
+float porcentaje = 0;
 uint8_t partes = 0;
+uint8_t paso = 0;
 
+uint32_t speed = 0;
 float frecuencia = 0;
+uint16_t flag = 0;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -88,6 +91,7 @@ void timmerTask (void const * args);
 /* Private function prototypes -----------------------------------------------*/
 void printMenssage(void);
 void drawProgram(uint8_t *);
+void turnOffAllScreen(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -406,6 +410,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
 	volatile static bool capturaIndex = false;
 	volatile static uint32_t captura1, captura2,periodo;
+	flag++;
 	if(!capturaIndex){
 		captura1 = HAL_GetTick();
 		capturaIndex = true;
@@ -441,6 +446,10 @@ void StartDefaultTask(void const * argument) {
 				HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 				maquina.power = OFF;
 				maquina.run = NO_INIT;
+				maquina.programa = M;
+				maquina.timmer = minTimmer;
+				paso=0;
+				turnOffAllScreen();
 			}
 			break;
 
@@ -457,13 +466,16 @@ void StartDefaultTask(void const * argument) {
 			break;
 
 		case PROGRAMA_BOTON:
-			if ((maquina.power == ON) && (maquina.run == NO_INIT)) {
-				if (maquina.programa == P3) {
+			if ((maquina.power == ON) && ((maquina.run == NO_INIT) | (maquina.run == FINISH))) {
+				if (maquina.programa == LAST_PROGRAM) {
 					maquina.programa = M;
 				} else {
 					maquina.programa = (program_e) (((uint8_t) maquina.programa) + 1);
 					}
 				if(maquina.programa != M){memcpy(programas[0], programas[(uint8_t) maquina.programa],24); }
+				maquina.run = NO_INIT;
+				maquina.timmer = minTimmer;
+				paso=0;
 			}
 			break;
 
@@ -488,7 +500,10 @@ void StartDefaultTask(void const * argument) {
 			break;
 
 		case TIMMER_BOTON:
-			if ((maquina.power == ON) && (maquina.run == NO_INIT)) {
+			if ((maquina.power == ON) && ((maquina.run == NO_INIT) | (maquina.run == FINISH))) {
+				if(maquina.run == FINISH){
+					maquina.run = NO_INIT;
+				}
 				 maquina.timmer += timmerStep;
 				if (maquina.timmer == maxTimmer) {
 					maquina.timmer = minTimmer;
@@ -503,7 +518,7 @@ void StartDefaultTask(void const * argument) {
 		case START_BOTON:
 			if ((maquina.power == ON) && (maquina.run != START)) {
 							maquina.run = START;
-						    porcentaje = maquina.timmer /25;
+						    porcentaje = (maquina.timmer * 1000) /23;
 						    initTime = maquina.timmer;
 						}
 			break;
@@ -526,8 +541,12 @@ void lcdTask(void const * argument) {
 	/* Infinite loop */
 	for (;;) {
 		lcd.setCursor(0, 0);
-		lcd.print(HAL_GetTick() / 1000);
-		osDelay(1000);
+		lcd.print (speed );
+		lcd.print("hola");
+
+		lcd.setCursor(0,1);
+		lcd.print(maquina.distancia);
+		osDelay(500);
 	}
 	/* USER CODE END lcdTask */
 }
@@ -539,21 +558,19 @@ void displayTask(void const * argument) {
 	uint8_t minutos  = 0;
 	/* Infinite loop */
 	for (;;) {
-		if (maquina.power == ON) {
+		if ((maquina.power == ON) && (maquina.run != FINISH)){
 			tm1637SetBrightness(7);
 			segundos = maquina.timmer % 60;
 			minutos = (maquina.timmer / 60) % 60;
 			tm1637DisplayDecimal(((minutos * 100) + (segundos)), 1);
 		}
-		else {
-			matrix.fillScreen(LOW);
-			tm1637SetBrightness(0);
-		}
 
+
+		   //Si hay un programa dibujado, se borran las barras pasadas
 			if ((maquina.power == ON) && (maquina.run == START) && (maquina.programa != M)) {
 
-				if ((initTime - maquina.timmer) >= porcentaje) {
-					static uint8_t paso = 0;
+				if (((initTime * 1000) - (maquina.timmer * 1000)) >= (porcentaje)) {
+
 					initTime = maquina.timmer;
 					//Aca hay que ir borrando la barra del programa
 					programas[0][paso] = 0;
@@ -562,15 +579,22 @@ void displayTask(void const * argument) {
 				}
 			}
 			matrix.fillScreen(LOW);
-			if ( (maquina.power == ON) && (maquina.programa != M) ) {
+
+			//Aca se dibuja el programa cuando se esta seleccionando
+			if ( (maquina.power == ON) && (maquina.programa != M) && (maquina.run != FINISH) ) {
 
 				drawProgram(programas[0]);
 
-			} else if (maquina.power == ON) {
+			} else if ((maquina.power == ON) && (maquina.programa == M) && (maquina.run != FINISH) ){
 				matrix.drawChar(7, 1, 'M', HIGH, LOW, 2);
 				matrix.write();
 			}
-			osDelay(500);
+
+			else if ((maquina.power == ON) && (maquina.run == FINISH)){
+				matrix.drawChar(7, 1, 'T', HIGH, LOW, 2);
+				matrix.write();
+			}
+			osDelay(250);
 		}
 
 	/* USER CODE END displayTask */
@@ -631,7 +655,7 @@ void entradasTask(void const * argument) {
 			//activated =0; suma = 0; previusActivated =0;
 			step = 0;
 		}
-		//osDelay(1);
+		osDelay(1);
 	}
 	/* USER CODE END entradasTask */
 }
@@ -640,10 +664,18 @@ void entradasTask(void const * argument) {
 void salidasTask(void const * argument) {
 	/* USER CODE BEGIN salidasTask */
 	/* Infinite loop */
+
 	for (;;) {
 		if((maquina.power == ON)&&(maquina.run == START)){
-			printNumberLn((uint32_t)frecuencieToSpeed(frecuencia), 10);
+			if(flag != 0){
+			speed = (uint32_t)frecuencieToSpeed(frecuencia);
+			flag = 0;
+			}
+			else if (flag == 0){
+				speed = 0;
+			}
 		}
+		printNumberLn(speed, 10);
 		osDelay(500);
 	}
 	/* USER CODE END salidasTask */
@@ -656,9 +688,13 @@ void timmerTask (void const * args){
 
 			if((maquina.power == ON)&&(maquina.run == START) && (maquina.timmer >0) ){
 				maquina.timmer -= 1;
+				maquina.distancia += (maquina.velocidad*1000)/3600;
 			}
 			if ((maquina.power == ON)&&(maquina.run == START) &&(maquina.timmer == 0)){
-				maquina.run = STOP;
+				maquina.velocidad = 0;
+				tm1637SetBrightness(0);
+				maquina.run = FINISH;
+				paso = 0;
 			}
 			osDelay(1000);
 	}
@@ -705,6 +741,13 @@ void drawProgram(uint8_t* barras) {
 
 	}
 	matrix.write();
+}
+
+void turnOffAllScreen(void){
+	matrix.fillScreen(LOW);
+	matrix.write();
+	tm1637SetBrightness(0);
+	lcd.clear();
 }
 
 void printMenssage(void) {
