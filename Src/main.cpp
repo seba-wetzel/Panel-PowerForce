@@ -563,6 +563,9 @@ void displayTask(void const * argument) {
 			segundos = maquina.timmer % 60;
 			minutos = (maquina.timmer / 60) % 60;
 			tm1637DisplayDecimal(((minutos * 100) + (segundos)), 1);
+			if(maquina.timmer == 0){
+				tm1637SetBrightness(0);
+			}
 		}
 
 
