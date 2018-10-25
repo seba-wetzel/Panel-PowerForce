@@ -172,7 +172,7 @@ typedef enum{
 }angle_e;
 
 typedef struct{
-	powerState_e power;
+	//powerState_e power; No se necesita mas, siempre va estar prendida
 	runState_e run;
 	program_e programa;
 	uint16_t velocidad;
@@ -188,20 +188,21 @@ void _Error_Handler(char *, int);
 #define Error_Handler() _Error_Handler(__FILE__, __LINE__)
 
 typedef enum {
-	ON_OFF_BOTON,
+	START_BOTON,
+	PAUSA_BOTON,
 	VEL_UP_BOTON,
 	VEL_DOWN_BOTON,
-//	ENTER_BOTON,
 	PROGRAMA_BOTON,
 	PENDIENTE_UP_BOTON,
 	PENDIENTE_DOWN_BOTON,
 	TIMMER_BOTON,
 	VIENTO_BOTON,
-	START_BOTON,
 	STOP_BOTON,
 	NONE_BOTON
 }boton_e;
+//Funcion que lee los botones
 
+extern boton_e botonRead(void);
 
 /**
   * @}
