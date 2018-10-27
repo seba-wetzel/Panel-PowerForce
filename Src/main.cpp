@@ -50,7 +50,7 @@ const uint8_t programas [4][24] = {
 //Buffer donde guardar y modificar el programa seleccionado
 uint8_t programaSeleccionado [24];
 
-maquina_s maquina = { NO_INIT, M, 0, minTimmer, A0 , 0};
+maquina_s maquina = { NO_INIT, M, 0, minTimmer, A0 , 0, 0, false};
 
 uint16_t pinEntradas[] = { VEL_UP_Pin, VEL_DOWN_Pin, ENTER_Pin, PROGRAMA_Pin,
 PENDIENTE_UP_Pin, PENDIENTE_DOWN_Pin, TIMMER_Pin, VIENTO_Pin, START_Pin,
@@ -83,6 +83,7 @@ uint8_t paso = 0;
 uint32_t speed = 0;
 float frecuencia = 0;
 uint16_t flag = 0;
+volatile 	boton_e boton = NONE_BOTON;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -105,6 +106,11 @@ void displayTask(void const * argument);
 void entradasTask(void const * argument);
 void salidasTask(void const * argument);
 void timmerTask (void const * args);
+//Funciones de calculo
+void calculateSpeed(void);
+void calculateCalories(void);
+void calculateDistance(void);
+
 extern boton_e botonRead(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -424,6 +430,24 @@ void matrixInit(void) {
 	matrix.setRotation(5, 1);
 }
 
+void calculateSpeed(void){
+	if(flag != 0){
+				speed = (uint32_t)frecuencieToSpeed(frecuencia);
+				flag = 0;
+				}
+				else if (flag == 0){
+					speed = 0;
+				}
+}
+
+void calculateDistance(void){
+
+}
+
+void calculateCalories(void){
+
+}
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
 	volatile static bool capturaIndex = false;
@@ -448,99 +472,136 @@ void StartDefaultTask(void const * argument) {
 
 	/* USER CODE BEGIN 5 */
 	/* Infinite loop */
-	boton_e boton = NONE_BOTON;
+
 	for (;;) {
 		osEvent evt = osMessageGet(colaHandle, osWaitForever);
 		if (evt.status == osEventMessage) {
 			boton = (boton_e) evt.value.signals;
 		}
+		if ((maquina.run == NO_INIT) && (boton == START_BOTON)){
+			maquina.run = CONFIG;
+			boton = NONE_BOTON;
+		}
+
 		switch (boton) {
-				case START_BOTON:
-					if ((maquina.run == PAUSE) | (maquina.run == NO_INIT)) {
-						digitalWrite(LED, HIGH);
-					}
-		            if ( (maquina.run != START)) {
-									maquina.run = START;
-								    porcentaje = (maquina.timmer * 1000) /23;
-								    initTime = maquina.timmer;
-								}
-					break;
-		        case PAUSA_BOTON:
-		            digitalWrite(LED, LOW);
 
-		            break;
+		case START_BOTON:
+			printStringLn("START");
+			if ((maquina.run == PAUSE) || (maquina.run == CONFIG)) {
+				maquina.run = RUNNING;
+			}
+			break;
 
-				case VEL_UP_BOTON:
-					if ( (maquina.run == START)	&& (maquina.programa == M) && (maquina.velocidad < maxSpeed)) {
-						maquina.velocidad++;
-					}
-					break;
+		case PAUSA_BOTON:
+			printStringLn("PAUSA");
+			if (maquina.run == RUNNING) {
+				maquina.run = PAUSE;
+			}
+			break;
 
-				case VEL_DOWN_BOTON:
-					if ( (maquina.run == START) && (maquina.programa == M) && (maquina.velocidad > 0)) {
-						maquina.velocidad--;
-					}
-					break;
+		case VEL_UP_BOTON:
+			printStringLn("VEL_UP");
+			if ((maquina.run == RUNNING) && (maquina.velocidad < maxSpeed)) {
+				maquina.velocidad++;
+			}
 
-				case PROGRAMA_BOTON:
-					if ( ((maquina.run == NO_INIT) | (maquina.run == FINISH))) {
-						if (maquina.programa == LAST_PROGRAM) {
-							maquina.programa = M;
-						} else {
-							maquina.programa = (program_e) (((uint8_t) maquina.programa) + 1);
-							}
-						if(maquina.programa != M){memcpy(programaSeleccionado, programas[(uint8_t) maquina.programa],24); }
-						maquina.run = NO_INIT;
-						maquina.timmer = minTimmer;
-						paso=0;
-					}
-					break;
+			break;
 
-				case PENDIENTE_UP_BOTON:
-					if ((maquina.programa == M) /*&& (maquina.run == START) && (maquina.programa == M)*/) {
-						if (maquina.inclinacion == A60) {
+		case VEL_DOWN_BOTON:
+			if ((maquina.run == RUNNING) && (maquina.velocidad > 0)) {
+				maquina.velocidad--;
+			}
 
-						} else {
-							maquina.inclinacion = (angle_e) (((uint8_t) maquina.inclinacion) + 1);
-						}
-					}
-					break;
+			break;
 
-				case PENDIENTE_DOWN_BOTON:
-					if ((maquina.programa == M) /*&& (maquina.run == START) && (maquina.programa == M)*/) {
-						if (maquina.inclinacion == A0) {
-
-						} else {
-							maquina.inclinacion = (angle_e) (((uint8_t) maquina.inclinacion) - 1);
-						}
-					}
-					break;
-
-				case TIMMER_BOTON:
-					if ( ((maquina.run == NO_INIT) | (maquina.run == FINISH))) {
-						if(maquina.run == FINISH){
-							maquina.run = NO_INIT;
-						}
-						 maquina.timmer += timmerStep;
-						if (maquina.timmer == maxTimmer) {
-							maquina.timmer = minTimmer;
-						}
-					}
-					break;
-
-				case VIENTO_BOTON: //Aca solo debe hacer un toggle del pin de salida (no definido aun)
-		            ;
-					break;
-
-				case STOP_BOTON:
-					if ( (maquina.run == START) | (maquina.run == PAUSE)) {
-									maquina.run = STOP;
-								}
-					break;
-
-				default:
-					break;
+		case PROGRAMA_BOTON:
+			if (maquina.run == CONFIG) {
+				if (maquina.programa == LAST_PROGRAM) {
+					maquina.programa = M;
+				} else {
+					maquina.programa = (program_e) (((uint8_t) maquina.programa)
+							+ 1);
 				}
+				if (maquina.programa != M) {
+					memcpy(programaSeleccionado,
+							programas[(uint8_t) maquina.programa], 24);
+				}
+			}
+			break;
+
+		case PENDIENTE_UP_BOTON:
+			if ((maquina.programa == M) || (maquina.run == CONFIG)) {
+				if (maquina.inclinacion == A60) {
+
+				} else {
+					maquina.inclinacion =
+							(angle_e) (((uint8_t) maquina.inclinacion) + 1);
+				}
+			}
+			break;
+
+		case PENDIENTE_DOWN_BOTON:
+			if ((maquina.programa == M) || (maquina.run == CONFIG)) {
+				if (maquina.inclinacion == A0) {
+
+				} else {
+					maquina.inclinacion =
+							(angle_e) (((uint8_t) maquina.inclinacion) - 1);
+				}
+			}
+			break;
+
+		case TIMMER_BOTON:
+			if (maquina.run == CONFIG) {
+				maquina.timmer += timmerStep;
+				if (maquina.timmer == maxTimmer) {
+					maquina.timmer = minTimmer;
+				}
+			}
+			break;
+
+		case VIENTO_BOTON:
+			if (maquina.run != NO_INIT) {
+				maquina.viento = !maquina.viento;
+			}
+			break;
+
+		case STOP_BOTON:
+			if ((maquina.run == PAUSE) || (maquina.run == RUNNING)) {
+				maquina.run = STOP;
+			}
+			break;
+
+		default:
+			break;
+		}
+
+		switch (maquina.run) {
+			case RUNNING:
+				calculateSpeed();
+				calculateDistance();
+				calculateCalories();
+				if(maquina.timmer == 0){
+					maquina.run = FINISH;
+				}
+
+			break;
+
+			case STOP:
+				maquina.calorias  = 0;
+				maquina.distancia = 0;
+				maquina.timmer    = 0;
+				maquina.run  = FINISH;
+
+			case FINISH:
+				//Hay que poner un mensajito en la pantalla
+				printStringLn("timer end");
+				maquina.run = NO_INIT;
+			break;
+
+			default:
+				break;
+		}
 
 	}
 	/* USER CODE END 5 */
@@ -551,6 +612,8 @@ void lcdTask(void const * argument) {
 	/* USER CODE BEGIN lcdTask */
 	/* Infinite loop */
 	for (;;) {
+
+
 		lcd.setCursor(0, 0);
 		lcd.print (speed );
 		lcd.print("hola");
@@ -581,7 +644,7 @@ void displayTask(void const * argument) {
 
 
 		   //Si hay un programa dibujado, se borran las barras pasadas
-			if ((maquina.run == START) && (maquina.programa != M)) {
+			if ((maquina.run == RUNNING) && (maquina.programa != M)) {
 
 				if (((initTime * 1000) - (maquina.timmer * 1000)) >= (porcentaje)) {
 
@@ -636,23 +699,24 @@ void entradasTask(void const * argument) {
 				previusActivated = activated;
 				step = 0;
 			} else {
-				if (step < 5) {
+				if (step < 25) {
 					step++;
 				}
 			}
-			while (activated == botonRead()) {
-				if ( activated == START_BOTON | activated == PAUSA_BOTON) {
+			while ((activated == botonRead()) && (activated != NONE_BOTON)){
+				if ( (activated == START_BOTON) || (activated == PAUSA_BOTON) ) {
 					do {
 						osDelay(500);
 					} while (activated == botonRead());
 				} else {
 					osDelay(150u - (2u * step));
+					break;
 				}
-				break;
+
 			}
 			//Envio del boton a la cola
-			osMessagePut(colaHandle,  activated, osWaitForever);
 
+			osMessagePut(colaHandle,  activated, osWaitForever);
 
 		osDelay(1);
 	}
@@ -665,17 +729,13 @@ void salidasTask(void const * argument) {
 	/* Infinite loop */
 
 	for (;;) {
-		if((maquina.run == START)){
-			if(flag != 0){
-			speed = (uint32_t)frecuencieToSpeed(frecuencia);
-			flag = 0;
-			}
-			else if (flag == 0){
-				speed = 0;
-			}
+		if((maquina.run == RUNNING)){
+			digitalWrite(LED,HIGH);
 		}
-		printNumberLn(speed, 10);
-		osDelay(500);
+		else {
+			digitalWrite(LED,LOW);
+		}
+
 	}
 	/* USER CODE END salidasTask */
 }
@@ -685,18 +745,9 @@ void timmerTask (void const * args){
 	/* Infinite loop */
 	for (;;) {
 
-            osDelay(500);
-			if((maquina.run == START) && (maquina.timmer >0) ){
+			if((maquina.run == RUNNING) && (maquina.timmer >0) ){
 				maquina.timmer -= 1;
-				maquina.distancia += (maquina.velocidad*1000)/3600;
 			}
-			if ((maquina.run == START) &&(maquina.timmer == 0)){
-				maquina.velocidad = 0;
-				tm1637SetBrightness(0);
-				maquina.run = FINISH;
-				paso = 0;
-			}
-
 			osDelay(1000);
 	}
 }

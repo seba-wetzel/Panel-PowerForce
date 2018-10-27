@@ -146,7 +146,8 @@
 
 typedef enum{
 	NO_INIT,
-	START,
+	CONFIG,
+	RUNNING,
 	PAUSE,
 	STOP,
 	FINISH
@@ -179,6 +180,7 @@ typedef struct{
 	angle_e inclinacion;
 	float distancia;
 	float calorias;
+	bool viento;
 }maquina_s;
 
 /* USER CODE END Private defines */

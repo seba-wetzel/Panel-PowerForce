@@ -38,7 +38,8 @@ boton_e botonRead(void) {
 	if (suma == 9) {
 
 		while (HAL_GPIO_ReadPin(puertoEntradas[activated],pinEntradas[activated]) == GPIO_PIN_RESET) {
-			osDelay(150);
+			osDelay(10);
+			break;
 		}
 		return (boton_e) activated;
 	} else {
