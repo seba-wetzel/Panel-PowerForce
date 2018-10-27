@@ -61,6 +61,21 @@ ENTER_GPIO_Port, PROGRAMA_GPIO_Port, PENDIENTE_UP_GPIO_Port,
 PENDIENTE_DOWN_GPIO_Port, TIMMER_GPIO_Port, VIENTO_GPIO_Port,
 START_GPIO_Port, STOP_GPIO_Port };
 
+uint16_t pinSalida[] = {ON_OFF_Pin, VEL_U_Pin, VEL_D_Pin, LED_Pin };
+GPIO_TypeDef* puertoSalidas[] = {ON_OFF_GPIO_Port, VEL_U_GPIO_Port, VEL_D_GPIO_Port, LED_GPIO_Port};
+
+enum {
+	POWER,
+	UP,
+	DOWN,
+	LED
+};
+
+
+#define digitalWrite(P, X) HAL_GPIO_WritePin((GPIO_TypeDef*)puertoSalidas[P],pinSalida[P], (GPIO_PinState)X);
+
+
+
 float porcentaje = 0;
 uint8_t partes = 0;
 uint8_t paso = 0;
@@ -439,7 +454,93 @@ void StartDefaultTask(void const * argument) {
 		if (evt.status == osEventMessage) {
 			boton = (boton_e) evt.value.signals;
 		}
+		switch (boton) {
+				case START_BOTON:
+					if ((maquina.run == PAUSE) | (maquina.run == NO_INIT)) {
+						digitalWrite(LED, HIGH);
+					}
+		            if ( (maquina.run != START)) {
+									maquina.run = START;
+								    porcentaje = (maquina.timmer * 1000) /23;
+								    initTime = maquina.timmer;
+								}
+					break;
+		        case PAUSA_BOTON:
+		            digitalWrite(LED, LOW);
 
+		            break;
+
+				case VEL_UP_BOTON:
+					if ( (maquina.run == START)	&& (maquina.programa == M) && (maquina.velocidad < maxSpeed)) {
+						maquina.velocidad++;
+					}
+					break;
+
+				case VEL_DOWN_BOTON:
+					if ( (maquina.run == START) && (maquina.programa == M) && (maquina.velocidad > 0)) {
+						maquina.velocidad--;
+					}
+					break;
+
+				case PROGRAMA_BOTON:
+					if ( ((maquina.run == NO_INIT) | (maquina.run == FINISH))) {
+						if (maquina.programa == LAST_PROGRAM) {
+							maquina.programa = M;
+						} else {
+							maquina.programa = (program_e) (((uint8_t) maquina.programa) + 1);
+							}
+						if(maquina.programa != M){memcpy(programaSeleccionado, programas[(uint8_t) maquina.programa],24); }
+						maquina.run = NO_INIT;
+						maquina.timmer = minTimmer;
+						paso=0;
+					}
+					break;
+
+				case PENDIENTE_UP_BOTON:
+					if ((maquina.programa == M) /*&& (maquina.run == START) && (maquina.programa == M)*/) {
+						if (maquina.inclinacion == A60) {
+
+						} else {
+							maquina.inclinacion = (angle_e) (((uint8_t) maquina.inclinacion) + 1);
+						}
+					}
+					break;
+
+				case PENDIENTE_DOWN_BOTON:
+					if ((maquina.programa == M) /*&& (maquina.run == START) && (maquina.programa == M)*/) {
+						if (maquina.inclinacion == A0) {
+
+						} else {
+							maquina.inclinacion = (angle_e) (((uint8_t) maquina.inclinacion) - 1);
+						}
+					}
+					break;
+
+				case TIMMER_BOTON:
+					if ( ((maquina.run == NO_INIT) | (maquina.run == FINISH))) {
+						if(maquina.run == FINISH){
+							maquina.run = NO_INIT;
+						}
+						 maquina.timmer += timmerStep;
+						if (maquina.timmer == maxTimmer) {
+							maquina.timmer = minTimmer;
+						}
+					}
+					break;
+
+				case VIENTO_BOTON: //Aca solo debe hacer un toggle del pin de salida (no definido aun)
+		            ;
+					break;
+
+				case STOP_BOTON:
+					if ( (maquina.run == START) | (maquina.run == PAUSE)) {
+									maquina.run = STOP;
+								}
+					break;
+
+				default:
+					break;
+				}
 
 	}
 	/* USER CODE END 5 */
@@ -524,53 +625,36 @@ void entradasTask(void const * argument) {
 	volatile uint8_t step = 0;
 	GPIO_PinState pines[10]; //Buffer para guardar el estado de las entradas
 */
-	volatile boton_e apretado;
+	volatile boton_e activated;
+	volatile boton_e previusActivated;
+	volatile uint8_t step = 0;
+
 	for (;;) {
-        apretado = botonRead();
-/*		//Bucle para guardar en el buffer el estado de las entradas
-		for (uint8_t i = 0; i <= 9; i++) {
-			pines[i] = HAL_GPIO_ReadPin(puertoEntradas[i], pinEntradas[i]);
-		}
-		suma = 0;
-		//Bucle para sumar el estado de todos los pines
-		for (uint8_t i = 0; i <= 9; i++) {
-			suma += pines[i];
-		}
-		//Si un solo pin esta activo la suma da 9, si es menor significa que se presionaron
-		//mas botones, si da mas significa que no se presiono ningun boton
-		if (suma == 9) {
-			//Buscamos que pin esta activado
-			for (uint8_t i = 0; i <= 9; i++) {
-				if (pines[i] == GPIO_PIN_RESET) {
-					activated = i;
-				}
-			}
+		activated = botonRead();
+
 			if (activated != previusActivated) {
 				previusActivated = activated;
-				//step = 0;
+				step = 0;
 			} else {
 				if (step < 5) {
 					step++;
 				}
 			}
-			while (HAL_GPIO_ReadPin(puertoEntradas[activated],
-					pinEntradas[activated]) == GPIO_PIN_RESET) {
-				if ((boton_e) activated == ON_OFF_BOTON) {
+			while (activated == botonRead()) {
+				if ( activated == START_BOTON | activated == PAUSA_BOTON) {
 					do {
 						osDelay(500);
-					} while (HAL_GPIO_ReadPin(puertoEntradas[activated],pinEntradas[activated]) == GPIO_PIN_RESET);
+					} while (activated == botonRead());
 				} else {
 					osDelay(150u - (2u * step));
 				}
 				break;
 			}
 			//Envio del boton a la cola
-			osMessagePut(colaHandle, (boton_e) activated, osWaitForever);
-		} else {
-			//activated =0; suma = 0; previusActivated =0;
-			step = 0;
-		}
-		osDelay(1);*/
+			osMessagePut(colaHandle,  activated, osWaitForever);
+
+
+		osDelay(1);
 	}
 	/* USER CODE END entradasTask */
 }
@@ -601,6 +685,7 @@ void timmerTask (void const * args){
 	/* Infinite loop */
 	for (;;) {
 
+            osDelay(500);
 			if((maquina.run == START) && (maquina.timmer >0) ){
 				maquina.timmer -= 1;
 				maquina.distancia += (maquina.velocidad*1000)/3600;
@@ -611,6 +696,7 @@ void timmerTask (void const * args){
 				maquina.run = FINISH;
 				paso = 0;
 			}
+
 			osDelay(1000);
 	}
 }

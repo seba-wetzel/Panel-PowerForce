@@ -114,6 +114,9 @@
 #define STOP_Pin GPIO_PIN_4
 #define STOP_GPIO_Port GPIOB
 
+
+
+
 /* USER CODE BEGIN Private defines */
 
 #include <stdint.h>
@@ -141,14 +144,10 @@
 #define maxTimmer 3600
 #define minTimmer 300
 
-typedef enum {
-	OFF,
-	ON
-}powerState_e;
-
 typedef enum{
 	NO_INIT,
 	START,
+	PAUSE,
 	STOP,
 	FINISH
 }runState_e;
@@ -179,6 +178,7 @@ typedef struct{
 	uint16_t timmer;
 	angle_e inclinacion;
 	float distancia;
+	float calorias;
 }maquina_s;
 
 /* USER CODE END Private defines */
