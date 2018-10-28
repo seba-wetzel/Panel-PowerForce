@@ -211,9 +211,17 @@ int main(void) {
 	/* USER CODE END RTOS_QUEUES */
 	matrixInit();
 	lcd.init();
+	lcd.backlight();
+	lcd.setCursor(0, 0);
+	lcd.print("POWER FORCE");
+	lcd.setCursor(0, 1);
+	lcd.print("Division maquinas");
+	HAL_Delay(1000);
+
+	lcd.clear();
 	tm1637Init();
 	tm1637SetBrightness(0);
-	printMenssage();
+//	printMenssage();
 	/* Start scheduler */
 	osKernelStart();
 
@@ -615,11 +623,10 @@ void lcdTask(void const * argument) {
 
 
 		lcd.setCursor(0, 0);
-		lcd.print (speed );
+		lcd.setCursor(0, 1);
 		lcd.print("hola");
 
-		lcd.setCursor(0,1);
-		lcd.print(maquina.distancia);
+//		lcd.print(maquina.distancia);
 		osDelay(500);
 	}
 	/* USER CODE END lcdTask */
