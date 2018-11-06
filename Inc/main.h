@@ -57,6 +57,8 @@
 #define pi 3.14159265359
 #define frecuencieToSpeed(x) ((pi*diametroRodillo*x)/100)
 
+#define digitalWrite(P, X) HAL_GPIO_WritePin((GPIO_TypeDef*)puertoSalidas[P],pinSalida[P], (GPIO_PinState)X);
+
 /* USER CODE END Includes */
 /* Private define ------------------------------------------------------------*/
 //SPI
@@ -139,10 +141,20 @@
 #include "WString.h"
 #endif // __cplusplus
 
-#define timmerStep 30
+#define timmerStep 300
 #define maxSpeed 160
-#define maxTimmer 3600
-#define minTimmer 300
+#define maxTimmer 36000
+#define minTimmer 3000
+
+enum {
+	POWER,
+	UP,
+	DOWN,
+	LED
+};
+
+
+
 
 typedef enum{
 	NO_INIT,

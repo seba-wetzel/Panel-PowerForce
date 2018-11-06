@@ -18,7 +18,8 @@ SPI_HandleTypeDef hspi1;
 
 UART_HandleTypeDef huart1;
 
-I2C_HandleTypeDef hi2c1;
+//I2C_HandleTypeDef hi2c1;
+I2C_HandleTypeDef hi2c2;
 
 osThreadId defaultTaskHandle;
 osThreadId TaskLCDHandle;
@@ -27,6 +28,9 @@ osThreadId TaskEntradasHandle;
 osThreadId TaskSalidasHandle;
 osThreadId TaskTimmerHandle;
 osMessageQId colaHandle;
+
+volatile bool displayMutex = false; //Bool to take or release the matrix display
+
 
 //Variables del display led
 int numberOfHorizontalDisplays = 3;
@@ -64,17 +68,6 @@ START_GPIO_Port, STOP_GPIO_Port };
 uint16_t pinSalida[] = {ON_OFF_Pin, VEL_U_Pin, VEL_D_Pin, LED_Pin };
 GPIO_TypeDef* puertoSalidas[] = {ON_OFF_GPIO_Port, VEL_U_GPIO_Port, VEL_D_GPIO_Port, LED_GPIO_Port};
 
-enum {
-	POWER,
-	UP,
-	DOWN,
-	LED
-};
-
-
-#define digitalWrite(P, X) HAL_GPIO_WritePin((GPIO_TypeDef*)puertoSalidas[P],pinSalida[P], (GPIO_PinState)X);
-
-
 
 float porcentaje = 0;
 uint8_t partes = 0;
@@ -89,7 +82,7 @@ volatile 	boton_e boton = NONE_BOTON;
 /* Private variables ---------------------------------------------------------*/
 Max72xxPanel matrix = Max72xxPanel(&hspi1, numberOfHorizontalDisplays,
 		numberOfVerticalDisplays);
-LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, &hi2c1, 16, 2); // set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, &hi2c2, 16, 2); // set the LCD address to 0x27 for a 16 chars and 2 line display
 		/* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,9 +90,8 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_SPI1_Init(void);
-static void MX_I2C1_Init(void);
-extern void initialise_monitor_handless (void);
-void matrixInit(void);  //Inicia los paneles en el sentido correcto
+static void MX_I2C2_Init(void);
+
 void StartDefaultTask(void const * argument);
 void lcdTask(void const * argument);
 void displayTask(void const * argument);
@@ -110,13 +102,16 @@ void timmerTask (void const * args);
 void calculateSpeed(void);
 void calculateCalories(void);
 void calculateDistance(void);
-
+//Interrupcion
 extern boton_e botonRead(void);
 /* USER CODE BEGIN PFP */
-/* Private function prototypes -----------------------------------------------*/
+void matrixInit(void);  //Inicia los paneles en el sentido correcto
+void matrixCountDown(void);
 void printMenssage(void);
 void drawProgram(uint8_t *);
 void turnOffAllScreen(void);
+
+/* Private function prototypes -----------------------------------------------*/
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -153,7 +148,8 @@ int main(void) {
 	MX_GPIO_Init();
 	MX_USART1_UART_Init();
 	MX_SPI1_Init();
-	MX_I2C1_Init();
+	//MX_I2C1_Init();
+	MX_I2C2_Init();
 
 	/* USER CODE BEGIN 2 */
 
@@ -161,6 +157,7 @@ int main(void) {
 
 	/* USER CODE BEGIN RTOS_MUTEX */
 	/* add mutexes, ... */
+
 	/* USER CODE END RTOS_MUTEX */
 
 	/* USER CODE BEGIN RTOS_SEMAPHORES */
@@ -337,7 +334,8 @@ static void MX_USART1_UART_Init(void) {
  * EXTI
  */
 
-/* I2C1 init function */
+/*
+ I2C1 init function
 static void MX_I2C1_Init(void) {
 
 	hi2c1.Instance = I2C1;
@@ -352,6 +350,27 @@ static void MX_I2C1_Init(void) {
 	if (HAL_I2C_Init(&hi2c1) != HAL_OK) {
 		_Error_Handler(__FILE__, __LINE__);
 	}
+
+}
+*/
+
+/* I2C2 init function */
+static void MX_I2C2_Init(void)
+{
+
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.ClockSpeed = 100000;
+  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
 
 }
 
@@ -438,6 +457,61 @@ void matrixInit(void) {
 	matrix.setRotation(5, 1);
 }
 
+void printMenssage(void) {
+
+	for (uint16_t i = 0; i < width * tape.length(); i++) {
+
+		uint16_t letter = i / width;
+		uint16_t x = (matrix.width() - 1) - i % width;
+
+		while (x + width - spacer >= 0 && letter >= 1) {
+			if (letter < tape.length()) {
+				matrix.drawChar(x, y, tape[letter], HIGH, LOW, 1);
+			}
+
+			letter--;
+			x -= width;
+		}
+
+		matrix.write(); // Send bitmap to display
+
+		HAL_Delay(wait);
+	}
+	HAL_Delay(200);
+	matrix.fillScreen(LOW);
+	matrix.write();
+
+}
+
+
+void matrixCountDown(void){
+	displayMutex = true; //Take the display
+	char numeros [] = {51,50,49};
+	for(int i = 0; i<3; i++){
+		matrix.drawChar(7, 1, numeros[i], HIGH, LOW, 2);
+		matrix.write();
+		osDelay(500);
+		matrix.fillScreen(LOW);
+		osDelay(500);
+		matrix.write();
+	}
+	displayMutex = false; //Release the display
+
+}
+void drawProgram(uint8_t* barras) {
+
+	for (uint8_t i = 0; i <= 24; i++) {
+		matrix.writeLine(i, (16 - barras[i]), i, 16, HIGH);
+
+	}
+	matrix.write();
+}
+void turnOffAllScreen(void){
+	matrix.fillScreen(LOW);
+	matrix.write();
+	tm1637SetBrightness(0);
+	lcd.clear();
+}
 void calculateSpeed(void){
 	if(flag != 0){
 				speed = (uint32_t)frecuencieToSpeed(frecuencia);
@@ -447,11 +521,9 @@ void calculateSpeed(void){
 					speed = 0;
 				}
 }
-
 void calculateDistance(void){
 
 }
-
 void calculateCalories(void){
 
 }
@@ -496,6 +568,12 @@ void StartDefaultTask(void const * argument) {
 		case START_BOTON:
 			printStringLn("START");
 			if ((maquina.run == PAUSE) || (maquina.run == CONFIG)) {
+				matrixCountDown();
+				if (maquina.run == CONFIG){
+					porcentaje = (maquina.timmer * 10) /24;
+					initTime = maquina.timmer;
+				}
+
 				maquina.run = RUNNING;
 			}
 			break;
@@ -604,7 +682,11 @@ void StartDefaultTask(void const * argument) {
 			case FINISH:
 				//Hay que poner un mensajito en la pantalla
 				printStringLn("timer end");
+				osDelay(1000);
 				maquina.run = NO_INIT;
+				maquina.timmer = minTimmer;
+				maquina.programa = M;
+				paso = 0;
 			break;
 
 			default:
@@ -619,14 +701,23 @@ void StartDefaultTask(void const * argument) {
 void lcdTask(void const * argument) {
 	/* USER CODE BEGIN lcdTask */
 	/* Infinite loop */
+	float velocidad;
 	for (;;) {
-
-
+		if(maquina.run == NO_INIT){
+			lcd.clear();
+			lcd.setCursor(0,0);
+			lcd.print("Presione Start");
+			lcd.setCursor(0,1);
+			lcd.print("para iniciar!");
+			while(maquina.run == NO_INIT){
+				osDelay(500);
+			}
+		}
+		velocidad = frecuencieToSpeed(frecuencia);
 		lcd.setCursor(0, 0);
+		lcd.print(maquina.velocidad);
 		lcd.setCursor(0, 1);
-		lcd.print("hola");
-
-//		lcd.print(maquina.distancia);
+		lcd.print(velocidad);
 		osDelay(500);
 	}
 	/* USER CODE END lcdTask */
@@ -635,51 +726,79 @@ void lcdTask(void const * argument) {
 /* displayTask function */
 void displayTask(void const * argument) {
 	/* USER CODE BEGIN displayTask */
-	uint8_t segundos = 0;
-	uint8_t minutos  = 0;
+	   typedef struct {
+		   runState_e run;
+		   program_e  program;
+	   }buffer_s;
+
+   bool programWasDrawed = false;
+   buffer_s state, lastState;
+
 	/* Infinite loop */
 	for (;;) {
-		if ((maquina.run != FINISH)){
-			tm1637SetBrightness(7);
-			segundos = maquina.timmer % 60;
-			minutos = (maquina.timmer / 60) % 60;
-			tm1637DisplayDecimal(((minutos * 100) + (segundos)), 1);
-			if(maquina.timmer == 0){
-				tm1637SetBrightness(0);
+		if (!displayMutex){
+
+			state.run = maquina.run;
+			state.program = maquina.programa;
+
+			if ((state.run != lastState.run) || (state.program != lastState.program)){
+				programWasDrawed = false;
+				lastState = state;
 			}
-		}
+
+       //Alguna funcion para imprimir los display de 7 segmentos, deberia ir aca.
+
+			//Aca se dibuja el programa cuando se esta seleccionando
+			if ( (maquina.programa != M) && (maquina.run != FINISH) && ((maquina.run == RUNNING) || (maquina.run == CONFIG)) && !programWasDrawed ) {
+
+				drawProgram(programaSeleccionado);
+				programWasDrawed = true;
+
+			} else if ((maquina.programa == M) && (maquina.run != FINISH) && ((maquina.run == RUNNING) || (maquina.run == CONFIG)) && !programWasDrawed){
+				//Esto simula la pista de correr pero solo dibuja la M (una sola vez)
+				matrix.drawChar(7, 1, 'M', HIGH, LOW, 2);
+				matrix.write();
+				programWasDrawed = true;
+			}
+
+			else if (maquina.run == PAUSE){
+				while((maquina.run == PAUSE) && !displayMutex){
+					matrix.drawChar(7, 1, 'P', HIGH, LOW, 2);
+					matrix.write();
+					osDelay(250);
+					matrix.fillScreen(LOW);
+					matrix.write();
+					osDelay(250);
+				}
+				programWasDrawed = false;
+			}
+
 
 
 		   //Si hay un programa dibujado, se borran las barras pasadas
 			if ((maquina.run == RUNNING) && (maquina.programa != M)) {
 
-				if (((initTime * 1000) - (maquina.timmer * 1000)) >= (porcentaje)) {
+				if (((initTime * 10) - (maquina.timmer * 10)) >= (porcentaje)) {
 
 					initTime = maquina.timmer;
 					//Aca hay que ir borrando la barra del programa
 					programaSeleccionado[paso] = 0;
 					paso++;
 					maquina.velocidad = programaSeleccionado[paso];
+  					drawProgram(programaSeleccionado);
 				}
 			}
 			matrix.fillScreen(LOW);
 
-			//Aca se dibuja el programa cuando se esta seleccionando
-			if ( (maquina.programa != M) && (maquina.run != FINISH) ) {
 
-				drawProgram(programaSeleccionado);
 
-			} else if ( (maquina.programa == M) && (maquina.run != FINISH) ){
-				matrix.drawChar(7, 1, 'M', HIGH, LOW, 2);
-				matrix.write();
-			}
-
-			else if ( (maquina.run == FINISH)){
+			if ( (maquina.run == FINISH)){
 				matrix.drawChar(7, 1, 'T', HIGH, LOW, 2);
 				matrix.write();
 			}
 			osDelay(250);
 		}
+	}
 
 	/* USER CODE END displayTask */
 }
@@ -751,11 +870,10 @@ void timmerTask (void const * args){
 	/* USER CODE BEGIN timmerTask */
 	/* Infinite loop */
 	for (;;) {
-
 			if((maquina.run == RUNNING) && (maquina.timmer >0) ){
 				maquina.timmer -= 1;
 			}
-			osDelay(1000);
+			osDelay(100);
 	}
 }
 
@@ -793,47 +911,7 @@ void _Error_Handler(char *file, int line) {
 	/* USER CODE END Error_Handler_Debug */
 }
 
-void drawProgram(uint8_t* barras) {
 
-	for (uint8_t i = 0; i <= 24; i++) {
-		matrix.writeLine(i, (16 - barras[i]), i, 16, HIGH);
-
-	}
-	matrix.write();
-}
-
-void turnOffAllScreen(void){
-	matrix.fillScreen(LOW);
-	matrix.write();
-	tm1637SetBrightness(0);
-	lcd.clear();
-}
-
-void printMenssage(void) {
-
-	for (uint16_t i = 0; i < width * tape.length(); i++) {
-
-		uint16_t letter = i / width;
-		uint16_t x = (matrix.width() - 1) - i % width;
-
-		while (x + width - spacer >= 0 && letter >= 1) {
-			if (letter < tape.length()) {
-				matrix.drawChar(x, y, tape[letter], HIGH, LOW, 1);
-			}
-
-			letter--;
-			x -= width;
-		}
-
-		matrix.write(); // Send bitmap to display
-
-		HAL_Delay(wait);
-	}
-	HAL_Delay(200);
-	matrix.fillScreen(LOW);
-	matrix.write();
-
-}
 
 #ifdef  USE_FULL_ASSERT
 /**
