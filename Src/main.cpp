@@ -41,6 +41,9 @@ int spacer = 1;
 int width = 5 + spacer; // The font width is 5 pixels
 int y = 5; // center the text vertically
 
+volatile uint8_t puntoMovil;
+volatile float puntoMovilF;
+float tempF;
 
 uint16_t initTime =0;
 
@@ -50,6 +53,16 @@ const uint8_t programas [4][24] = {
 		{ 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2,	5, 5, 2, 1 },
 		{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10, 9, 7, 7, 4, 4, 3, 3, 2, 2, 1 },
 		{ 1, 1, 2, 2, 5, 5, 2, 2, 8, 8, 4, 4, 10, 10, 2, 2, 5, 5, 2, 2, 5, 5, 2, 1 }};
+
+const uint8_t punto [52] [2] = {
+		{7,2},{6,2},{5,2},{4,2},{3,3},{2,4},{2,5},{2,6},{2,7},
+		{2,8},{2,9},{2,10},{2,11},{2,12},{2,13},{2,14},{2,15},
+		{2,16},{2,17},{2,18},{2,19},{3,20},{4,21},{5,21},{6,21},
+		{7,21},{8,21},{9,21},{10,21},{11,21},{12,20},{13,19},
+		{13,18},{13,17},{13,16},{13,15},{13,14},{13,13},{13,12},
+		{13,11},{13,10},{13,9},{13,8},{13,7},{13,6},{13,5},{13,4},
+		{12,3},{11,2},{10,2},{9,2},{8,2}
+};
 
 //Buffer donde guardar y modificar el programa seleccionado
 uint8_t programaSeleccionado [24];
@@ -109,6 +122,7 @@ void matrixInit(void);  //Inicia los paneles en el sentido correcto
 void matrixCountDown(void);
 void printMenssage(void);
 void drawProgram(uint8_t *);
+void drawProgramBlink (uint8_t * , uint8_t);
 void turnOffAllScreen(void);
 
 /* Private function prototypes -----------------------------------------------*/
@@ -440,7 +454,6 @@ static void MX_GPIO_Init(void) {
 }
 
 /* USER CODE BEGIN 4 */
-
 void matrixInit(void) {
 	matrix.init();
 	matrix.setPosition(0, 0, 0);
@@ -456,11 +469,8 @@ void matrixInit(void) {
 	matrix.setRotation(4, 1);
 	matrix.setRotation(5, 1);
 }
-
 void printMenssage(void) {
-
 	for (uint16_t i = 0; i < width * tape.length(); i++) {
-
 		uint16_t letter = i / width;
 		uint16_t x = (matrix.width() - 1) - i % width;
 
@@ -472,18 +482,13 @@ void printMenssage(void) {
 			letter--;
 			x -= width;
 		}
-
 		matrix.write(); // Send bitmap to display
-
 		HAL_Delay(wait);
 	}
-	HAL_Delay(200);
+	HAL_Delay(150);
 	matrix.fillScreen(LOW);
 	matrix.write();
-
 }
-
-
 void matrixCountDown(void){
 	displayMutex = true; //Take the display
 	char numeros [] = {51,50,49};
@@ -496,13 +501,25 @@ void matrixCountDown(void){
 		matrix.write();
 	}
 	displayMutex = false; //Release the display
-
 }
 void drawProgram(uint8_t* barras) {
 
 	for (uint8_t i = 0; i <= 24; i++) {
 		matrix.writeLine(i, (16 - barras[i]), i, 16, HIGH);
 
+	}
+	matrix.write();
+}
+void drawProgramBlink(uint8_t* barras, uint8_t blink) {
+    static bool blinker = true;
+	for (uint8_t i = 0; i <= 24; i++) {
+		if (i == blink){
+			matrix.writeLine(i, (16 - barras[i]), i, 16, blinker);
+			blinker = !blinker;
+		}
+		else {
+		matrix.writeLine(i, (16 - barras[i]), i, 16, HIGH);
+		}
 	}
 	matrix.write();
 }
@@ -527,7 +544,6 @@ void calculateDistance(void){
 void calculateCalories(void){
 
 }
-
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
 	volatile static bool capturaIndex = false;
@@ -731,7 +747,9 @@ void displayTask(void const * argument) {
 		   program_e  program;
 	   }buffer_s;
 
+
    bool programWasDrawed = false;
+   uint8_t blink = 5;
    buffer_s state, lastState;
 
 	/* Infinite loop */
@@ -754,13 +772,13 @@ void displayTask(void const * argument) {
 				drawProgram(programaSeleccionado);
 				programWasDrawed = true;
 
-			} else if ((maquina.programa == M) && (maquina.run != FINISH) && ((maquina.run == RUNNING) || (maquina.run == CONFIG)) && !programWasDrawed){
+			} else if ((maquina.programa == M) && (maquina.run != FINISH) &&  (maquina.run == CONFIG) && !programWasDrawed){
+				/*((maquina.run == RUNNING) || (maquina.run == CONFIG))*/
 				//Esto simula la pista de correr pero solo dibuja la M (una sola vez)
 				matrix.drawChar(7, 1, 'M', HIGH, LOW, 2);
 				matrix.write();
 				programWasDrawed = true;
 			}
-
 			else if (maquina.run == PAUSE){
 				while((maquina.run == PAUSE) && !displayMutex){
 					matrix.drawChar(7, 1, 'P', HIGH, LOW, 2);
@@ -770,6 +788,27 @@ void displayTask(void const * argument) {
 					matrix.write();
 					osDelay(250);
 				}
+				programWasDrawed = false;
+			}
+			else if ((maquina.programa == M) && (maquina.run != FINISH) &&  (maquina.run == RUNNING) && !programWasDrawed){
+                tempF = maquina.distancia;
+				puntoMovilF = fmodf(tempF, 400.0f);
+				//puntoMovil = puntoMovilF;
+				//puntoMovilF -=puntoMovil;
+
+				//puntoMovilF = mapF(puntoMovilF,0,1,0,100);
+				puntoMovil = (uint8_t) ((puntoMovilF*52.0f)/400.0f);
+
+
+				matrix.drawRoundRect(0,0,24,16,3,HIGH);
+
+				//matrix.drawRoundRect(2,2,20,12,3,HIGH);
+
+				matrix.drawPixel(punto[puntoMovil][1], punto[puntoMovil][0], HIGH);
+
+				matrix.drawRoundRect(4,4,16,8,3,HIGH);
+				matrix.write();
+
 				programWasDrawed = false;
 			}
 
@@ -786,6 +825,14 @@ void displayTask(void const * argument) {
 					paso++;
 					maquina.velocidad = programaSeleccionado[paso];
   					drawProgram(programaSeleccionado);
+				}
+				if (((initTime * 10) - (maquina.timmer * 10)) >= (porcentaje- blink *100)) {
+					drawProgramBlink(programaSeleccionado, paso);
+					blink--;
+					if(blink == 0){
+						blink =5;
+					}
+
 				}
 			}
 			matrix.fillScreen(LOW);
@@ -865,6 +912,7 @@ void salidasTask(void const * argument) {
 	}
 	/* USER CODE END salidasTask */
 }
+
 /* timmerTask function */
 void timmerTask (void const * args){
 	/* USER CODE BEGIN timmerTask */
@@ -872,6 +920,7 @@ void timmerTask (void const * args){
 	for (;;) {
 			if((maquina.run == RUNNING) && (maquina.timmer >0) ){
 				maquina.timmer -= 1;
+				maquina.distancia = maquina.distancia + ((maquina.velocidad/10.0)/36.0);
 			}
 			osDelay(100);
 	}

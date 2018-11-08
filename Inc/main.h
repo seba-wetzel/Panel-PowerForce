@@ -191,7 +191,7 @@ typedef struct{
 	uint16_t timmer;
 	angle_e inclinacion;
 	float distancia;
-	float calorias;
+	uint16_t calorias;
 	bool viento;
 }maquina_s;
 
