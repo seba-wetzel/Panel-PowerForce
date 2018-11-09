@@ -43,7 +43,7 @@ int y = 5; // center the text vertically
 
 volatile uint8_t puntoMovil;
 volatile float puntoMovilF;
-float tempF;
+
 
 uint16_t initTime =0;
 
@@ -702,6 +702,7 @@ void StartDefaultTask(void const * argument) {
 				maquina.run = NO_INIT;
 				maquina.timmer = minTimmer;
 				maquina.programa = M;
+				maquina.distancia = 0;
 				paso = 0;
 			break;
 
@@ -791,24 +792,12 @@ void displayTask(void const * argument) {
 				programWasDrawed = false;
 			}
 			else if ((maquina.programa == M) && (maquina.run != FINISH) &&  (maquina.run == RUNNING) && !programWasDrawed){
-                tempF = maquina.distancia;
-				puntoMovilF = fmodf(tempF, 400.0f);
-				//puntoMovil = puntoMovilF;
-				//puntoMovilF -=puntoMovil;
-
-				//puntoMovilF = mapF(puntoMovilF,0,1,0,100);
+				puntoMovilF = fmodf(maquina.distancia, 400.0f);
 				puntoMovil = (uint8_t) ((puntoMovilF*52.0f)/400.0f);
-
-
 				matrix.drawRoundRect(0,0,24,16,3,HIGH);
-
-				//matrix.drawRoundRect(2,2,20,12,3,HIGH);
-
 				matrix.drawPixel(punto[puntoMovil][1], punto[puntoMovil][0], HIGH);
-
 				matrix.drawRoundRect(4,4,16,8,3,HIGH);
 				matrix.write();
-
 				programWasDrawed = false;
 			}
 
