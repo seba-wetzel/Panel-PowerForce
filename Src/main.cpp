@@ -402,10 +402,10 @@ static void MX_GPIO_Init(void) {
 	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOA, VEL_U_Pin | VEL_D_Pin | ON_OFF_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOA, VEL_U_Pin|VEL_D_Pin|ON_OFF_Pin|PEN_U_Pin |PEN_D_Pin, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, CS_Pin|LATCH_Pin|CLOCK_Pin|DATA_Pin, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin : LED_Pin */
 	GPIO_InitStruct.Pin = LED_Pin;
@@ -414,15 +414,15 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
-	/*Configure GPIO pins : VEL_U_Pin VEL_D_Pin ON_OFF_Pin */
-	GPIO_InitStruct.Pin = VEL_U_Pin | VEL_D_Pin | ON_OFF_Pin;
+	/*Configure GPIO pins : VEL_U_Pin VEL_D_Pin ON_OFF_Pin PEN_U_Pin PEN_D_Pin */
+	GPIO_InitStruct.Pin = VEL_U_Pin|VEL_D_Pin|ON_OFF_Pin|PEN_U_Pin |PEN_D_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-	/*Configure GPIO pin : CS_Pin */
-	GPIO_InitStruct.Pin = CS_Pin;
+	/*Configure GPIO pins : CS_Pin LATCH_Pin CLOCK_Pin DATA_Pin */
+	GPIO_InitStruct.Pin = CS_Pin|LATCH_Pin|CLOCK_Pin|DATA_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -430,7 +430,7 @@ static void MX_GPIO_Init(void) {
 
 	/*Configure GPIO pins : VEL_UP_Pin VEL_DOWN_Pin ENTER_Pin PROGRAMA_Pin START_Pin STOP_Pin */
 
-	GPIO_InitStruct.Pin = VEL_UP_Pin | VEL_DOWN_Pin | ENTER_Pin | PROGRAMA_Pin 	| START_Pin | STOP_Pin;
+	GPIO_InitStruct.Pin = encoder_incl_Pin| VEL_UP_Pin | VEL_DOWN_Pin | ENTER_Pin | PROGRAMA_Pin 	| START_Pin | STOP_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -891,11 +891,32 @@ void salidasTask(void const * argument) {
 	/* Infinite loop */
 
 	for (;;) {
-		if((maquina.run == RUNNING)){
+		if((maquina.run == RUNNING)|| (maquina.run == PAUSE)){
 			digitalWrite(LED,HIGH);
 		}
 		else {
 			digitalWrite(LED,LOW);
+		}
+
+		if ((maquina.run == RUNNING)){
+			if (speed > maquina.velocidad){
+				do{
+					//Acelerar
+					digitalWrite(vUP, HIGH);
+					osDelay(100);
+					digitalWrite(vUP,LOW);
+				}
+				while(speed > maquina.velocidad);
+			}
+			else if(speed < maquina.velocidad){
+				do{
+					//Desacelerar
+					digitalWrite(vDOWN, HIGH);
+					osDelay(100);
+					digitalWrite(vDOWN,LOW);
+				}
+				while(speed < maquina.velocidad);
+			}
 		}
 
 	}
@@ -908,6 +929,7 @@ void timmerTask (void const * args){
 	/* Infinite loop */
 	for (;;) {
 			if((maquina.run == RUNNING) && (maquina.timmer >0) ){
+				calculateSpeed();
 				maquina.timmer -= 1;
 				maquina.distancia = maquina.distancia + ((maquina.velocidad/10.0)/36.0);
 			}

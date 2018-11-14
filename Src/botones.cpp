@@ -1,5 +1,5 @@
 /*
- * botones.c
+ * botones.cpp
  *
  *  Created on: 24 oct. 2018
  *      Author: seba
@@ -47,3 +47,6 @@ boton_e botonRead(void) {
 	}
 }
 
+bool encoderRead (void){
+
+}

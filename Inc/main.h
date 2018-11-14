@@ -81,6 +81,16 @@
 #define SDA_Pin GPIO_PIN_7
 #define SDA_GPIO_Port GPIOB
 
+//pseudo SPI display 7 segmentos
+#define LATCH_Pin GPIO_PIN_5
+#define LATCH_GPIO_Port GPIOB
+
+#define CLOCK_Pin GPIO_PIN_6
+#define CLOCK_GPIO_Port GPIOB
+
+#define DATA_Pin GPIO_PIN_7
+#define DATA_GPIO_Port GPIOB
+
 //Salidas
 #define LED_Pin GPIO_PIN_13
 #define LED_GPIO_Port GPIOC
@@ -91,10 +101,20 @@
 #define ON_OFF_Pin GPIO_PIN_2
 #define ON_OFF_GPIO_Port GPIOA
 
+#define PEN_U_Pin GPIO_PIN_3
+#define PEN_U_GPIO_Port GPIOA
+
+#define PEN_D_Pin GPIO_PIN_4
+#define PEN_D_GPIO_Port GPIOA
+
 //Entradas
 #define encoder_Pin GPIO_PIN_0
 #define encoder_GPIO_Port GPIOB
 #define encoder_EXTI_IRQn EXTI0_IRQn
+
+#define encoder_incl_Pin GPIO_PIN_2
+#define encoder_incl_GPIO_Port GPIOB
+
 #define VEL_UP_Pin GPIO_PIN_12
 #define VEL_UP_GPIO_Port GPIOB
 #define VEL_DOWN_Pin GPIO_PIN_13
@@ -148,8 +168,10 @@
 
 enum {
 	POWER,
-	UP,
-	DOWN,
+	vUP,
+	vDOWN,
+	pUP,
+	pDOWN,
 	LED
 };
 
@@ -217,7 +239,7 @@ typedef enum {
 //Funcion que lee los botones
 
 extern boton_e botonRead(void);
-
+extern bool encoderRead(void);
 /**
   * @}
   */ 
