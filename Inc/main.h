@@ -236,10 +236,20 @@ typedef enum {
 	STOP_BOTON,
 	NONE_BOTON
 }boton_e;
-//Funcion que lee los botones
 
+typedef enum{
+	UP,
+	DOWN,
+	STAY
+}direction_e;
+
+typedef enum{
+	FALLING = 0,
+	RISING
+}detection_e;
+//Funcion que lee los botones
 extern boton_e botonRead(void);
-extern bool encoderRead(void);
+extern detection_e encoderRead(detection_e*);
 /**
   * @}
   */ 

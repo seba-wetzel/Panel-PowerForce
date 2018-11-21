@@ -47,6 +47,6 @@ boton_e botonRead(void) {
 	}
 }
 
-bool encoderRead (void){
-
+detection_e encoderRead (detection_e *lastState){
+ return FALLING;
 }

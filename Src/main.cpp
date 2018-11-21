@@ -853,6 +853,7 @@ void entradasTask(void const * argument) {
 	volatile boton_e activated;
 	volatile boton_e previusActivated;
 	volatile uint8_t step = 0;
+	volatile detection_e lastState = (detection_e)0;
 
 	for (;;) {
 		activated = botonRead();

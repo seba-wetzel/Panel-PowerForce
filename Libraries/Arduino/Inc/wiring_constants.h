@@ -65,9 +65,11 @@ enum BitOrder {
 
 //      LOW 0
 //      HIGH 1
+/*Comente esto para poder usarlo en encoder, se supone que estan en desuso
 #define CHANGE 2
 #define FALLING 3
 #define RISING 4
+*/
 
 #define DEFAULT 1
 #define EXTERNAL 0
