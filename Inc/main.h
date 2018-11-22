@@ -53,7 +53,7 @@
 
 /* USER CODE BEGIN Includes */
 #define millis() HAL_GetTick()
-#define diametroRodillo 12
+#define diametroRodillo 60
 #define pi 3.14159265359
 #define frecuencieToSpeed(x) ((pi*diametroRodillo*x)/100)
 

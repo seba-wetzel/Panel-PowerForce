@@ -86,9 +86,9 @@ float porcentaje = 0;
 uint8_t partes = 0;
 uint8_t paso = 0;
 
-uint32_t speed = 0;
+int32_t speed = 0;
 float frecuencia = 0;
-uint16_t flag = 0;
+volatile uint16_t flag = 0;
 volatile 	boton_e boton = NONE_BOTON;
 
 /* USER CODE BEGIN PV */
@@ -124,7 +124,7 @@ void printMenssage(void);
 void drawProgram(uint8_t *);
 void drawProgramBlink (uint8_t * , uint8_t);
 void turnOffAllScreen(void);
-
+void clearData (void); //Borra los datos del struct
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE END PFP */
 
@@ -137,7 +137,7 @@ void turnOffAllScreen(void);
  *
  * @retval None
  */
-int main(void) {
+ int main(void) {
 	/* USER CODE BEGIN 1 */
 
 	/* USER CODE END 1 */
@@ -230,8 +230,8 @@ int main(void) {
 	HAL_Delay(1000);
 
 	lcd.clear();
-	tm1637Init();
-	tm1637SetBrightness(0);
+	//tm1637Init();
+	//tm1637SetBrightness(0);
 //	printMenssage();
 	/* Start scheduler */
 	osKernelStart();
@@ -526,17 +526,22 @@ void drawProgramBlink(uint8_t* barras, uint8_t blink) {
 void turnOffAllScreen(void){
 	matrix.fillScreen(LOW);
 	matrix.write();
-	tm1637SetBrightness(0);
+	//tm1637SetBrightness(0);
 	lcd.clear();
 }
 void calculateSpeed(void){
-	if(flag != 0){
-				speed = (uint32_t)frecuencieToSpeed(frecuencia);
-				flag = 0;
-				}
-				else if (flag == 0){
-					speed = 0;
-				}
+	if(flag < 10){
+		if(frecuencia > 0){
+		speed = (uint32_t)frecuencieToSpeed(frecuencia);
+		flag++;
+		}
+		else{
+			speed = -1;
+		}
+		}
+		else if (flag == 0u){
+			speed = 0;
+			}
 }
 void calculateDistance(void){
 
@@ -544,11 +549,23 @@ void calculateDistance(void){
 void calculateCalories(void){
 
 }
+void clearData(void){
+	maquina.programa = M;
+	maquina.velocidad   = 0;
+	maquina.timmer      = 0;
+	maquina.inclinacion = A0;
+	maquina.distancia   = 0;
+	maquina.calorias    = 0;
+	maquina.viento      = false;
+
+
+
+}
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
 	volatile static bool capturaIndex = false;
 	volatile static uint32_t captura1, captura2,periodo;
-	flag++;
+	flag = 0;
 	if(!capturaIndex){
 		captura1 = HAL_GetTick();
 		capturaIndex = true;
@@ -556,7 +573,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	else if (capturaIndex){
 		captura2 = HAL_GetTick();
 		periodo = captura2 - captura1;
+		if(periodo > 16){
 		frecuencia = 1000.f/periodo;
+		}
+		else{
+			frecuencia = -1;
+		}
 		capturaIndex = false;
 	}
 }
@@ -680,7 +702,7 @@ void StartDefaultTask(void const * argument) {
 
 		switch (maquina.run) {
 			case RUNNING:
-				calculateSpeed();
+				//calculateSpeed();
 				calculateDistance();
 				calculateCalories();
 				if(maquina.timmer == 0){
@@ -690,9 +712,7 @@ void StartDefaultTask(void const * argument) {
 			break;
 
 			case STOP:
-				maquina.calorias  = 0;
-				maquina.distancia = 0;
-				maquina.timmer    = 0;
+				clearData();
 				maquina.run  = FINISH;
 
 			case FINISH:
@@ -701,7 +721,7 @@ void StartDefaultTask(void const * argument) {
 				osDelay(1000);
 				maquina.run = NO_INIT;
 				maquina.timmer = minTimmer;
-				maquina.programa = M;
+
 				maquina.distancia = 0;
 				paso = 0;
 			break;
@@ -893,30 +913,36 @@ void salidasTask(void const * argument) {
 
 	for (;;) {
 		if((maquina.run == RUNNING)|| (maquina.run == PAUSE)){
-			digitalWrite(LED,HIGH);
+			digitalWrite(POWER,HIGH);
 		}
 		else {
-			digitalWrite(LED,LOW);
+			digitalWrite(POWER,LOW);
 		}
 
-		if ((maquina.run == RUNNING)){
-			if (speed > maquina.velocidad){
+			if ((maquina.run == RUNNING)){
+			if ((speed < maquina.velocidad) && (speed >=0)){
 				do{
 					//Acelerar
 					digitalWrite(vUP, HIGH);
-					osDelay(100);
+					osDelay(150);
 					digitalWrite(vUP,LOW);
+					if(maquina.run != RUNNING){
+						break;
+					}
 				}
-				while(speed > maquina.velocidad);
+				while((speed < maquina.velocidad)&& (speed >=0));
 			}
-			else if(speed < maquina.velocidad){
+			else if((speed > maquina.velocidad) && (speed >=0)){
 				do{
 					//Desacelerar
 					digitalWrite(vDOWN, HIGH);
-					osDelay(100);
+					osDelay(150);
 					digitalWrite(vDOWN,LOW);
+					if(maquina.run != RUNNING){
+						break;
+					}
 				}
-				while(speed < maquina.velocidad);
+				while((speed > maquina.velocidad) && (speed >=0));
 			}
 		}
 
@@ -931,6 +957,7 @@ void timmerTask (void const * args){
 	for (;;) {
 			if((maquina.run == RUNNING) && (maquina.timmer >0) ){
 				calculateSpeed();
+				//speed = (uint32_t)frecuencieToSpeed(frecuencia);
 				maquina.timmer -= 1;
 				maquina.distancia = maquina.distancia + ((maquina.velocidad/10.0)/36.0);
 			}
