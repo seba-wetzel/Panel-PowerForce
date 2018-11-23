@@ -245,7 +245,9 @@ typedef enum{
 
 typedef enum{
 	FALLING = 0,
-	RISING
+	RISING,
+	ACTIVE,
+	INACTIVE
 }detection_e;
 //Funcion que lee los botones
 extern boton_e botonRead(void);

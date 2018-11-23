@@ -48,5 +48,29 @@ boton_e botonRead(void) {
 }
 
 detection_e encoderRead (detection_e *lastState){
+	GPIO_PinState pinState = HAL_GPIO_ReadPin(encoder_incl_GPIO_Port, encoder_incl_Pin); //TODO This is a hardcode function
+	if((*lastState == INACTIVE)&& (pinState == GPIO_PIN_SET)){ //El pin se activa con un bajo
+		return INACTIVE;
+	}
+
+	if((*lastState == INACTIVE)&& (pinState == GPIO_PIN_RESET)){ //El pin se activa con un bajo
+		*lastState = ACTIVE;
+		return RISING;
+	}
+
+	if((*lastState == ACTIVE)&& (pinState == GPIO_PIN_RESET)){ //El pin se activa con un bajo
+		return ACTIVE;
+	}
+
+	if((*lastState == ACTIVE)&& (pinState == GPIO_PIN_SET)){ //El pin se activa con un bajo
+		*lastState = INACTIVE;
+		return FALLING;
+	}
+
+	if((*lastState == INACTIVE)&& (pinState == GPIO_PIN_SET)){ //El pin se activa con un bajo
+		return INACTIVE;
+	}
+
+
  return FALLING;
 }
