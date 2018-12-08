@@ -53,10 +53,11 @@
 
 /* USER CODE BEGIN Includes */
 #define millis() HAL_GetTick()
-#define diametroRodillo 60
-#define pi 3.14159265359
-#define frecuencieToSpeed(x) ((pi*diametroRodillo*x)/100)
-
+#define diametroRodillo 18.0f
+#define pi 3.14159265359f
+#define frecuencieToSpeed(x) (((pi*diametroRodillo*x)/100.0f)*3.6f)
+#define speedToFrecuencie(x) (((x/3.6f)*100.0f)/(pi*diametroRodillo))
+#define histeresys 2
 #define digitalWrite(P, X) HAL_GPIO_WritePin((GPIO_TypeDef*)puertoSalidas[P],pinSalida[P], (GPIO_PinState)X);
 
 /* USER CODE END Includes */

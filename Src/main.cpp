@@ -530,9 +530,10 @@ void turnOffAllScreen(void){
 	lcd.clear();
 }
 void calculateSpeed(void){
+	Sflag++;
 	if(flag < 10){
 		if(frecuencia > 0){
-		speed = (uint32_t)frecuencieToSpeed(frecuencia);
+		speed = frecuencieToSpeed(frecuencia);
 		flag++;
 		}
 		else{
@@ -814,6 +815,8 @@ void displayTask(void const * argument) {
 			else if ((maquina.programa == M) && (maquina.run != FINISH) &&  (maquina.run == RUNNING) && !programWasDrawed){
 				puntoMovilF = fmodf(maquina.distancia, 400.0f);
 				puntoMovil = (uint8_t) ((puntoMovilF*52.0f)/400.0f);
+				matrix.fillScreen(LOW);
+				matrix.write();
 				matrix.drawRoundRect(0,0,24,16,3,HIGH);
 				matrix.drawPixel(punto[puntoMovil][1], punto[puntoMovil][0], HIGH);
 				matrix.drawRoundRect(4,4,16,8,3,HIGH);
