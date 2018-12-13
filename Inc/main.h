@@ -53,7 +53,7 @@
 
 /* USER CODE BEGIN Includes */
 #define millis() HAL_GetTick()
-#define diametroRodillo 18.0f
+#define diametroRodillo 8.0f
 #define pi 3.14159265359f
 #define frecuencieToSpeed(x) (((pi*diametroRodillo*x)/100.0f)*3.6f)
 #define speedToFrecuencie(x) (((x/3.6f)*100.0f)/(pi*diametroRodillo))
@@ -113,8 +113,8 @@
 #define encoder_GPIO_Port GPIOB
 #define encoder_EXTI_IRQn EXTI0_IRQn
 
-#define encoder_incl_Pin GPIO_PIN_2
-#define encoder_incl_GPIO_Port GPIOB
+#define encoder_incl_Pin GPIO_PIN_13 //GPIO_PIN_2
+#define encoder_incl_GPIO_Port GPIOC //GPIOB Cambie el pin por el del led, PB2 es pin de booteo
 
 #define VEL_UP_Pin GPIO_PIN_12
 #define VEL_UP_GPIO_Port GPIOB
@@ -172,8 +172,7 @@ enum {
 	vUP,
 	vDOWN,
 	pUP,
-	pDOWN,
-	LED
+	pDOWN
 };
 
 
@@ -196,8 +195,6 @@ typedef enum {
 	LAST_PROGRAM
 }program_e;
 
-
-
 typedef enum{
 	A0,
 	A15,
@@ -210,7 +207,7 @@ typedef struct{
 	//powerState_e power; No se necesita mas, siempre va estar prendida
 	runState_e run;
 	program_e programa;
-	uint16_t velocidad;
+	float velocidad;
 	uint16_t timmer;
 	angle_e inclinacion;
 	float distancia;

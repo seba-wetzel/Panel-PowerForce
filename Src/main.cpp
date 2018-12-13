@@ -78,18 +78,21 @@ ENTER_GPIO_Port, PROGRAMA_GPIO_Port, PENDIENTE_UP_GPIO_Port,
 PENDIENTE_DOWN_GPIO_Port, TIMMER_GPIO_Port, VIENTO_GPIO_Port,
 START_GPIO_Port, STOP_GPIO_Port };
 
-uint16_t pinSalida[] = {ON_OFF_Pin, VEL_U_Pin, VEL_D_Pin, LED_Pin };
-GPIO_TypeDef* puertoSalidas[] = {ON_OFF_GPIO_Port, VEL_U_GPIO_Port, VEL_D_GPIO_Port, LED_GPIO_Port};
+uint16_t pinSalida[] = {ON_OFF_Pin, VEL_U_Pin, VEL_D_Pin, PEN_U_Pin, PEN_D_Pin };
+GPIO_TypeDef* puertoSalidas[] = {ON_OFF_GPIO_Port, VEL_U_GPIO_Port, VEL_D_GPIO_Port,PEN_U_GPIO_Port, PEN_D_GPIO_Port };
 
 
 float porcentaje = 0;
 uint8_t partes = 0;
 uint8_t paso = 0;
 
-int32_t speed = 0;
+float speed = 0;
 float frecuencia = 0;
-volatile uint16_t flag = 0;
-volatile 	boton_e boton = NONE_BOTON;
+uint16_t flag = 0;
+boton_e boton = NONE_BOTON;
+detection_e lastState = (detection_e) 3;
+uint8_t inclCounter = 0;
+direction_e inclDiretion = DOWN;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -221,18 +224,18 @@ void clearData (void); //Borra los datos del struct
 	/* add queues, ... */
 	/* USER CODE END RTOS_QUEUES */
 	matrixInit();
-	lcd.init();
+/*	lcd.init();
 	lcd.backlight();
 	lcd.setCursor(0, 0);
 	lcd.print("POWER FORCE");
 	lcd.setCursor(0, 1);
 	lcd.print("Division maquinas");
-	HAL_Delay(1000);
+	HAL_Delay(1000);*/
 
 	lcd.clear();
 	//tm1637Init();
 	//tm1637SetBrightness(0);
-//	printMenssage();
+	printMenssage();
 	/* Start scheduler */
 	osKernelStart();
 
@@ -399,7 +402,7 @@ static void MX_GPIO_Init(void) {
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 
 	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+	//HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOA, VEL_U_Pin|VEL_D_Pin|ON_OFF_Pin|PEN_U_Pin |PEN_D_Pin, GPIO_PIN_RESET);
@@ -407,11 +410,19 @@ static void MX_GPIO_Init(void) {
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOB, CS_Pin|LATCH_Pin|CLOCK_Pin|DATA_Pin, GPIO_PIN_RESET);
 
-	/*Configure GPIO pin : LED_Pin */
+/*
+	Configure GPIO pin : LED_Pin
 	GPIO_InitStruct.Pin = LED_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
+*/
+
+	/*Configure GPIO pin : encoder_incl_Pin*/
+	GPIO_InitStruct.Pin = encoder_incl_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 	HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
 	/*Configure GPIO pins : VEL_U_Pin VEL_D_Pin ON_OFF_Pin PEN_U_Pin PEN_D_Pin */
@@ -430,7 +441,7 @@ static void MX_GPIO_Init(void) {
 
 	/*Configure GPIO pins : VEL_UP_Pin VEL_DOWN_Pin ENTER_Pin PROGRAMA_Pin START_Pin STOP_Pin */
 
-	GPIO_InitStruct.Pin = encoder_incl_Pin| VEL_UP_Pin | VEL_DOWN_Pin | ENTER_Pin | PROGRAMA_Pin 	| START_Pin | STOP_Pin;
+	GPIO_InitStruct.Pin = VEL_UP_Pin | VEL_DOWN_Pin | ENTER_Pin | PROGRAMA_Pin 	| START_Pin | STOP_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -529,30 +540,30 @@ void turnOffAllScreen(void){
 	//tm1637SetBrightness(0);
 	lcd.clear();
 }
-void calculateSpeed(void){
-	Sflag++;
-	if(flag < 10){
-		if(frecuencia > 0){
-		speed = frecuencieToSpeed(frecuencia);
-		flag++;
+void calculateSpeed(void) {
+	//Sflag++;
+	if (flag <= 10) {
+		if (frecuencia > 0) {
+			speed = frecuencieToSpeed(frecuencia);
+			flag++;
 		}
-		else{
-			speed = -1;
-		}
-		}
-		else if (flag == 0u){
-			speed = 0;
-			}
+	} else if (flag == 0u) {
+		speed = 0;
+	} else {
+
+		frecuencia = 0;
+	}
+
 }
 void calculateDistance(void){
-
+	maquina.distancia = maquina.distancia + ((maquina.velocidad)/3600.0f);
 }
 void calculateCalories(void){
 
 }
 void clearData(void){
 	maquina.programa = M;
-	maquina.velocidad   = 0;
+	maquina.velocidad   = 0.0f;
 	maquina.timmer      = 0;
 	maquina.inclinacion = A0;
 	maquina.distancia   = 0;
@@ -627,14 +638,14 @@ void StartDefaultTask(void const * argument) {
 		case VEL_UP_BOTON:
 			printStringLn("VEL_UP");
 			if ((maquina.run == RUNNING) && (maquina.velocidad < maxSpeed)) {
-				maquina.velocidad++;
+				maquina.velocidad+= 0.10000000000f;
 			}
 
 			break;
 
 		case VEL_DOWN_BOTON:
 			if ((maquina.run == RUNNING) && (maquina.velocidad > 0)) {
-				maquina.velocidad--;
+				maquina.velocidad-=0.10000000000f;
 			}
 
 			break;
@@ -721,6 +732,7 @@ void StartDefaultTask(void const * argument) {
 				printStringLn("timer end");
 				osDelay(1000);
 				maquina.run = NO_INIT;
+				clearData();
 				maquina.timmer = minTimmer;
 
 				maquina.distancia = 0;
@@ -730,6 +742,17 @@ void StartDefaultTask(void const * argument) {
 			default:
 				break;
 		}
+
+		if((uint16_t)maquina.inclinacion > inclCounter ){
+			inclDiretion = UP;
+		}
+		else if ((uint16_t)maquina.inclinacion < inclCounter ){
+			inclDiretion = DOWN;
+		}
+		else if ((uint16_t)maquina.inclinacion == inclCounter ){
+			inclDiretion = STAY;
+		}
+
 
 	}
 	/* USER CODE END 5 */
@@ -815,8 +838,6 @@ void displayTask(void const * argument) {
 			else if ((maquina.programa == M) && (maquina.run != FINISH) &&  (maquina.run == RUNNING) && !programWasDrawed){
 				puntoMovilF = fmodf(maquina.distancia, 400.0f);
 				puntoMovil = (uint8_t) ((puntoMovilF*52.0f)/400.0f);
-				matrix.fillScreen(LOW);
-				matrix.write();
 				matrix.drawRoundRect(0,0,24,16,3,HIGH);
 				matrix.drawPixel(punto[puntoMovil][1], punto[puntoMovil][0], HIGH);
 				matrix.drawRoundRect(4,4,16,8,3,HIGH);
@@ -876,7 +897,7 @@ void entradasTask(void const * argument) {
 	volatile boton_e activated;
 	volatile boton_e previusActivated;
 	volatile uint8_t step = 0;
-	volatile detection_e lastState = (detection_e)0;
+    uint16_t counter = 0;
 
 	for (;;) {
 		activated = botonRead();
@@ -900,11 +921,22 @@ void entradasTask(void const * argument) {
 				}
 
 			}
-			//Envio del boton a la cola
+            counter++;
+			if(counter > 150){
+				if (encoderRead(&lastState) == RISING ){
+					if(inclDiretion == UP)
+					inclCounter++;
+					else if (inclDiretion == DOWN){
+						inclCounter--;
+					}
+				}
 
+				counter = 0;
+			}
+			//Envio del boton a la cola
 			osMessagePut(colaHandle,  activated, osWaitForever);
 
-		osDelay(1);
+	osDelay(1);
 	}
 	/* USER CODE END entradasTask */
 }
@@ -915,7 +947,7 @@ void salidasTask(void const * argument) {
 	/* Infinite loop */
 
 	for (;;) {
-		if((maquina.run == RUNNING)|| (maquina.run == PAUSE)){
+		if((maquina.run == RUNNING)/*|| (maquina.run == PAUSE)*/){
 			digitalWrite(POWER,HIGH);
 		}
 		else {
@@ -923,31 +955,49 @@ void salidasTask(void const * argument) {
 		}
 
 			if ((maquina.run == RUNNING)){
-			if ((speed < maquina.velocidad) && (speed >=0)){
+			if ((frecuencia < speedToFrecuencie(maquina.velocidad)) /*&& (speed >=0)*/){
 				do{
 					//Acelerar
 					digitalWrite(vUP, HIGH);
-					osDelay(150);
+					osDelay(60);
 					digitalWrite(vUP,LOW);
+					osDelay(500);
 					if(maquina.run != RUNNING){
 						break;
 					}
 				}
-				while((speed < maquina.velocidad)&& (speed >=0));
+				while((frecuencia < speedToFrecuencie(maquina.velocidad))/*&& (speed >=0)*/);
 			}
-			else if((speed > maquina.velocidad) && (speed >=0)){
+			else if((frecuencia > speedToFrecuencie(maquina.velocidad)) /*&& (speed >0)*/){
 				do{
 					//Desacelerar
 					digitalWrite(vDOWN, HIGH);
-					osDelay(150);
+					osDelay(60);
 					digitalWrite(vDOWN,LOW);
+					osDelay(500);
 					if(maquina.run != RUNNING){
 						break;
 					}
 				}
-				while((speed > maquina.velocidad) && (speed >=0));
+				while((frecuencia > speedToFrecuencie(maquina.velocidad)) /*&& (speed >0)*/);
 			}
 		}
+
+			if(maquina.run == RUNNING){
+				if(inclDiretion == UP){
+					digitalWrite(pDOWN, LOW);
+					digitalWrite(pUP, HIGH);
+
+				}
+				if(inclDiretion == DOWN){
+					digitalWrite(pDOWN, HIGH);
+					digitalWrite(pUP, LOW);
+				}
+				if(inclDiretion == STAY){
+					digitalWrite(pDOWN, LOW);
+					digitalWrite(pUP, LOW);
+				}
+			}
 
 	}
 	/* USER CODE END salidasTask */
@@ -962,7 +1012,8 @@ void timmerTask (void const * args){
 				calculateSpeed();
 				//speed = (uint32_t)frecuencieToSpeed(frecuencia);
 				maquina.timmer -= 1;
-				maquina.distancia = maquina.distancia + ((maquina.velocidad/10.0)/36.0);
+				calculateDistance();
+				calculateCalories();
 			}
 			osDelay(100);
 	}
